@@ -1,4 +1,4 @@
-import { CardType } from "../components/Card";
+import { CardType } from "../types/card";
 
 const calculateDamage = (attacker: CardType) => {
   return attacker.weight * 10;
@@ -42,6 +42,6 @@ export const resolveDamage = (
   return [
     calculateDamage(attacker),
     attacker.pressure + defender.pressure < 0 || // if either one is defending
-    attacker.weight === 3, // Heavy attack ends the turn
+      attacker.weight === 3, // Heavy attack ends the turn
   ];
 };

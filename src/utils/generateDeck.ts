@@ -1,4 +1,4 @@
-import { CardType } from "../components/Card";
+import { CardType } from "../types/card";
 
 const generateDeck = (quantity: number = 50): CardType[] =>
   Array(quantity)

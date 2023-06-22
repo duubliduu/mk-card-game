@@ -1,36 +1,6 @@
-import React, { FunctionComponent } from "react";
+import { FunctionComponent } from "react";
+import {CardType, Pressure, Reach, Stance, Weight} from "../types/card";
 
-enum Stance {
-  Low,
-  Mid,
-  High = 2,
-}
-
-enum Reach {
-  Grapple,
-  Punch,
-  Kick,
-  FireBall,
-}
-
-enum Weight {
-  Light = 1,
-  Medium,
-  Heavy,
-}
-
-enum Pressure {
-  Defensive = -1,
-  Controlled,
-  Aggressive,
-}
-
-export type CardType = {
-  stance: Stance;
-  reach: Reach;
-  weight: Weight;
-  pressure: Pressure;
-};
 
 type CardProps = {
   onClick?: () => void;
