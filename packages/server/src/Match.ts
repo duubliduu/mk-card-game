@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { CardType, Side } from "./types/card";
+import { CardType, Side } from "./types";
 import { resolveDamage } from "./utils/resolveDamage";
 
 type HitPoints = { [side in Side]: number };
@@ -30,8 +30,6 @@ class Match {
     const [damage, endTurn] = resolveDamage(card, this.stack[0]);
     // replace the top card
     this.stack = [card, ...this.stack];
-
-    console.log(damage, endTurn);
 
     this.dealDamage(damage);
 

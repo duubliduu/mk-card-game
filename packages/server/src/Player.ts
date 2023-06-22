@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { CardType, Side } from "./types/card";
+import { CardType, Side } from "./types";
 import generateDeck from "./utils/generateDeck";
 import Match from "./Match";
 
@@ -96,11 +96,10 @@ class Player {
     this.side = side;
 
     this.match.on("afterPlay", () => {
-      this.socket.emit("hitPoints", this.hitPoints);
+      this.socket.emit("hitPoints", this.match?.hitPoints);
       this.socket.emit("inTurn", this.inTurn);
     });
 
-    this.socket.emit("hitPoints", this.hitPoints);
     this.socket.emit("inTurn", this.inTurn);
   }
 }

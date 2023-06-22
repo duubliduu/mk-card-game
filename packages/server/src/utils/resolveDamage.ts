@@ -1,4 +1,4 @@
-import { CardType } from "../types/card";
+import { CardType } from "../types";
 
 const calculateDamage = (attacker: CardType) => {
   return attacker.weight * 10;

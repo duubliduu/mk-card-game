@@ -2,7 +2,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import Match from "./Match";
 import Player, { Status } from "./Player";
-import { Side } from "./types/card";
+import { Side } from "./types";
 
 const httpServer = createServer();
 

@@ -5,13 +5,12 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -27,16 +26,22 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build
+        run: npm run build -ws
 
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: 'placeholder'
+          known_hosts: "placeholder"
 
       - name: Adding Known Hosts
         run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy with rsync
-        run: rsync -r ./build/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com
+        run: rsync -r ./packages/client/build/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com/client
+
+      - name: Deploy with rsync
+        run: rsync -r ./packages/server/dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com/server
+
+      - name: Start node server
+        run: ssh -t  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /var/www/combat-cards.duubliduu.com/server; node server.js"

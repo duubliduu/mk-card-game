@@ -9,7 +9,7 @@ const useSocket = (events: { [key: string]: (...args: any[]) => void }) => {
     Object.entries(events).forEach(([key, value]) => {
       socketRef.current!.on(key, value);
     });
-  }, []);
+  }, [events]);
 
   return socketRef;
 };

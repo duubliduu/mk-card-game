@@ -1,6 +1,5 @@
 import { FunctionComponent } from "react";
-import {CardType, Pressure, Reach, Stance, Weight} from "../types/card";
-
+import { CardType, Pressure, Reach, Stance, Weight } from "../types";
 
 type CardProps = {
   onClick?: () => void;
