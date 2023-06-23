@@ -3,14 +3,9 @@ import { CardType, Side } from "./types";
 import generateDeck from "./utils/generateDeck";
 import Match from "./Match";
 
-export enum Status {
-  inQueue,
-  inMatch,
-}
-
 class Player {
   socket: Socket;
-  match?: Match;
+  match: Match | null = null;
   deck: CardType[] = [];
   hand: [CardType | null, CardType | null, CardType | null] = [
     null,
@@ -21,11 +16,13 @@ class Player {
 
   constructor(socket: Socket) {
     this.socket = socket;
+
+    // generate random deck for the player
     this.deck = generateDeck();
+    // Draw three
     this.draw(0, 1, 2);
 
     socket.emit("hand", this.hand);
-    socket.emit("identify", socket.id);
 
     socket.on("play", (index: number) => {
       if (!this.match) {
@@ -71,13 +68,6 @@ class Player {
     });
   }
 
-  get status() {
-    if (this.match) {
-      return Status.inMatch;
-    }
-    return Status.inQueue;
-  }
-
   get inTurn() {
     return this.match && this.side === this.match.side;
   }
@@ -89,20 +79,51 @@ class Player {
     return this.match.hitPoints[this.side];
   }
 
-  joinMatch(match: Match, side: Side) {
-    this.socket.join(match.id);
+  resolveGameState() {
+    if (!this.match || !this.side) {
+      // This player is not in a game
+      return null;
+    }
 
-    console.log(`${this.socket.id} joined match ${match.id}`);
+    return this.match.hitPoints[this.side] > 0;
+  }
 
+  public joinMatch(match: Match, onGameOver: Function) {
     this.match = match;
+
+    const side = this.match.setSide(this);
+
+    if (side === undefined) {
+      return false;
+    }
+
+    // Set side
     this.side = side;
+
+    this.socket.leave("queue");
+    this.socket.join(match.id);
 
     this.match.on("afterPlay", () => {
       this.socket.emit("hitPoints", this.match?.hitPoints);
       this.socket.emit("inTurn", this.inTurn);
+
+      if (this.resolveGameState() === false) {
+        this.socket.emit("gameOver", "lose");
+        this.socket.broadcast.to(this.match!.id).emit("gameOver", "win");
+        // remove the match
+        this.match = null;
+        onGameOver();
+      }
     });
 
+    this.socket.emit("side", this.side);
     this.socket.emit("inTurn", this.inTurn);
+  }
+
+  toString() {
+    const { socket, ...rest } = this;
+
+    return JSON.stringify(rest);
   }
 }
 

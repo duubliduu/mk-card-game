@@ -1,39 +1,59 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
 import Match from "./Match";
-import Player, { Status } from "./Player";
-import { Side } from "./types";
+import Player from "./Player";
 
 const httpServer = createServer();
 
 const io = new Server(httpServer, {
+  cookie: true,
   cors: {
     origin: "*",
   },
 });
 
-const players: Player[] = [];
-
-const getQueue = () => {
-  return players.filter((player) => player.status === Status.inQueue);
-};
+const players: Record<string, Player> = {};
+const matches: Record<string, Match> = {};
 
 io.on("connection", (socket) => {
-  players.push(new Player(socket));
+  players[socket.id] = new Player(socket);
 
-  socket.on("disconnect", () => {
-    const index = players.findIndex((player) => player.socket.id === socket.id);
-    players.splice(index, 1);
+  // Everyone goes to the queue by default
+  socket.join("queue");
+
+  socket.emit("id", socket.id);
+
+  // Challenge other player
+  socket.on("challenge", (opponentId) => {
+    // Create a match
+    const match = new Match();
+    // save the match
+    matches[match.id] = match;
+    // send the match to opponent
+    socket.to(opponentId).emit("challenge", match.id);
+    // send the match to self
+    socket.emit("startMatch", match.id);
   });
 
-  if (getQueue().length > 1) {
-    const [left, right] = getQueue().slice(0, 2);
+  // Accept the challenge
+  socket.on("match", (matchId: string) => {
+    const match = matches[matchId];
 
-    const match = new Match();
+    if (!match) {
+      socket.emit("gameOver");
+      return;
+    }
 
-    left.joinMatch(match, Side.Left);
-    right.joinMatch(match, Side.Right);
-  }
+    players[socket.id].joinMatch(match, () => {
+      delete matches[matchId];
+    });
+  });
+
+  socket.on("disconnect", () => {
+    delete players[socket.id];
+  });
+
+  socket.nsp.to("queue").emit("queue", Object.keys(players));
 });
 
 console.log("Listening port 8080");

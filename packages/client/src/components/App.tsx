@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Card from "./Card";
 import { CardType, Side } from "../types";
 import useSocket from "../hooks/useSocket";
-import { punch } from "../utils/audio";
+
+import { useNavigate, useParams } from "react-router-dom";
 
 function App() {
   const [stack, setStack] = useState<CardType[]>([]);
@@ -14,6 +15,11 @@ function App() {
     [Side.Left]: 100,
     [Side.Right]: 100,
   });
+  const [side, setSide] = useState<Side>();
+
+  const navigate = useNavigate();
+
+  const { id: matchId } = useParams();
 
   const socketRef = useSocket({
     message: (message: string) => console.log("message", message),
@@ -23,6 +29,16 @@ function App() {
     },
     inTurn: setIntTurn,
     hitPoints: setHitPoints,
+    gameOver: (gameState?: string) => {
+      if (gameState === "lose") {
+        window.alert("You lose");
+        navigate("/");
+      } else if (gameState === "win") {
+        window.alert("You win");
+        navigate("/");
+      }
+    },
+    side: setSide,
   });
 
   const handlePlayCard = (index: number) => {
@@ -30,13 +46,19 @@ function App() {
       return;
     }
 
-    punch.play();
-
     socketRef.current?.emit("play", index);
   };
 
+  useEffect(() => {
+    if (matchId) {
+      socketRef.current?.emit("match", matchId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="bg-gray-100 h-screen">
+      <div>Side {side}</div>
       <div className="container mx-auto py-4 px-4">
         <section className="flex justify-between flex-row">
           <div className="w-1/2 relative">
