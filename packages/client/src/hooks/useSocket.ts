@@ -4,7 +4,7 @@ import { io, Socket } from "socket.io-client";
 const useSocket = (events: { [key: string]: (...args: any[]) => void }) => {
   const socketRef = useRef<Socket>();
   useEffect(() => {
-    socketRef.current = io();
+    socketRef.current = io(process.env.REACT_APP_SOCKET_URL || {});
 
     Object.entries(events).forEach(([key, value]) => {
       socketRef.current!.on(key, value);

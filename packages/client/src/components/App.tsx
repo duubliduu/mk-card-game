@@ -39,23 +39,37 @@ function App() {
     <div className="bg-gray-100 h-screen">
       <div className="container mx-auto py-4 px-4">
         <section className="flex justify-between flex-row">
-          <div className="w-1/2">
+          <div className="w-1/2 relative">
             <div
-              className="h-2"
+              className="h-2 absolute left-0"
               style={{
                 background: "red",
                 transition: "width 1s",
                 width: `${hitPoints[Side.Left]}%`,
               }}
             />
+            <div
+              className="h-2 absolute left-0"
+              style={{
+                background: "green",
+                width: `${hitPoints[Side.Left]}%`,
+              }}
+            />
           </div>
           <div>VS.</div>
-          <div className="w-1/2 flex justify-end">
+          <div className="w-1/2 flex justify-end relative">
             <div
-              className="h-2"
+              className="h-2 absolute right-0"
               style={{
                 background: "red",
                 transition: "width 1s",
+                width: `${hitPoints[Side.Right]}%`,
+              }}
+            />
+            <div
+              className="h-2 absolute right-0"
+              style={{
+                background: "green",
                 width: `${hitPoints[Side.Right]}%`,
               }}
             />

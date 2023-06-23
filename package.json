@@ -8,7 +8,7 @@
     "server:start": "npm start -w @combat-cards/server",
     "server:build": "npm run build -w @combat-cards/server",
     "client:start": "npm start -w @combat-cards/client",
-    "client:build": "API_URL='/api' npm run build -w @combat-cards/client"
+    "client:build": "npm run build -w @combat-cards/client"
   },
   "dependencies": {
     "typescript": "^4.9.5"
