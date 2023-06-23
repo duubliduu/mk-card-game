@@ -92,6 +92,8 @@ class Player {
   joinMatch(match: Match, side: Side) {
     this.socket.join(match.id);
 
+    console.log(`${this.socket.id} joined match ${match.id}`);
+
     this.match = match;
     this.side = side;
 

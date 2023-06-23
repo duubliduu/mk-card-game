@@ -38,8 +38,8 @@ function App() {
   return (
     <div className="bg-gray-100 h-screen">
       <div className="container mx-auto py-4 px-4">
-        <section className="columns-2">
-          <div className="border-solid border border-sleight-500">
+        <section className="flex justify-between flex-row">
+          <div className="w-1/2">
             <div
               className="h-2"
               style={{
@@ -49,7 +49,8 @@ function App() {
               }}
             />
           </div>
-          <div className="border-solid border border-sleight-500">
+          <div>VS.</div>
+          <div className="w-1/2 flex justify-end">
             <div
               className="h-2"
               style={{

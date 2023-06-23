@@ -9,7 +9,7 @@
     "typescript": "^4.9.5"
   },
   "scripts": {
-    "start": "nodemon src/server.ts",
+    "start": "nodemon --watch src src/server.ts",
     "forever": "forever start server.js",
     "build": "tsc"
   },

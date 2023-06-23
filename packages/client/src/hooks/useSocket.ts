@@ -9,7 +9,8 @@ const useSocket = (events: { [key: string]: (...args: any[]) => void }) => {
     Object.entries(events).forEach(([key, value]) => {
       socketRef.current!.on(key, value);
     });
-  }, [events]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return socketRef;
 };
