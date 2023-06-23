@@ -41,7 +41,10 @@ jobs:
         run: rsync -r ./packages/client/build/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com/client
 
       - name: Deploy with rsync
-        run: rsync -r ./packages/server/dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com/server
+        run: rsync -r ./packages/server/dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com/
+
+      - name: Deploy package.json and lock to server
+        run: rsync -r ./packages/server/package* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com/
 
       - name: Start node server
-        run: ssh -t  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /var/www/combat-cards.duubliduu.com/server; node server.js"
+        run: ssh -t  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /var/www/combat-cards.duubliduu.com; npm i --omit=dev; npm run forever"
