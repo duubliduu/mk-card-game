@@ -16,30 +16,42 @@ const players: Record<string, Player> = {};
 const matches: Record<string, Match> = {};
 
 io.on("connection", (socket) => {
-  players[socket.id] = new Player(socket);
-
   // Everyone goes to the queue by default
   socket.join("queue");
 
+  // Identify the user for them
   socket.emit("id", socket.id);
 
-  // Challenge other player
+  // Add new user to list
+  players[socket.id] = new Player(socket);
+
+  // Send list of players to the connected user
+  socket.emit("queue", Object.keys(players));
+
+  // Everyone else gets the new list
+  socket.broadcast.to("queue").emit("queue", Object.keys(players));
+
+  // User challenges someone
   socket.on("challenge", (opponentId) => {
     // Create a match
     const match = new Match();
+
     // save the match
     matches[match.id] = match;
+
     // send the match to opponent
     socket.to(opponentId).emit("challenge", match.id);
+
     // send the match to self
     socket.emit("startMatch", match.id);
   });
 
-  // Accept the challenge
+  // Enter the match
   socket.on("match", (matchId: string) => {
     const match = matches[matchId];
 
     if (!match) {
+      socket.emit("message", `Match with id ${matchId} doesn't exist`);
       socket.emit("gameOver");
       return;
     }
@@ -48,6 +60,8 @@ io.on("connection", (socket) => {
       delete matches[matchId];
       socket.emit("gameOver");
     });
+
+    socket.nsp.to(matchId).emit("enter", match.isReady);
   });
 
   socket.on("disconnect", () => {
@@ -55,6 +69,8 @@ io.on("connection", (socket) => {
 
     if (player && player.match) {
       const matchId = player.match.id;
+
+      socket.nsp.to(matchId).emit("leave");
 
       // Leave the match
       player.leaveMatch();
@@ -75,11 +91,12 @@ io.on("connection", (socket) => {
 
     // Remove player from memory
     delete players[socket.id];
-  });
 
-  socket.nsp.to("queue").emit("queue", Object.keys(players));
+    // You're out, everyone gets the update list
+    socket.broadcast.to("queue").emit("queue", Object.keys(players));
+  });
 });
 
 io.listen(8080);
 
-console.log("Listening port 8080");
+console.log("Server started at 8080");

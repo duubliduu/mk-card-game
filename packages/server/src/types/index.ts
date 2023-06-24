@@ -1,7 +1,7 @@
 export enum Stance {
   Low,
   Mid,
-  High = 2,
+  High,
 }
 
 export enum Reach {
@@ -28,8 +28,15 @@ export enum Side {
   Right,
 }
 
+export enum Guard {
+  Crouch,
+  Stand,
+  Air,
+}
+
 export type CardType = {
   stance: Stance;
+  guard: Guard;
   reach: Reach;
   weight: Weight;
   pressure: Pressure;

@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import "./index.css";
-import App from "./components/App";
+import Match from "./components/Match";
 import reportWebVitals from "./reportWebVitals";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Queue from "./Queue";
@@ -14,7 +14,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/match/:id?",
-    element: <App />,
+    element: <Match />,
   },
 ]);
 

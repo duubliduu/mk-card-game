@@ -6,7 +6,6 @@ import Player from "./Player";
 type HitPoints = { [side in Side]: number };
 
 class Match {
-  private stack: CardType[] = [];
   private events: { [key: string]: Function[] } = {};
 
   public id: string = uuidv4();
@@ -19,6 +18,11 @@ class Match {
     [Side.Left]: null,
     [Side.Right]: null,
   };
+  public stack: CardType[] = [];
+
+  get isReady(): boolean {
+    return !!this.players[Side.Left] && !!this.players[Side.Right];
+  }
 
   get opposingSide(): Side {
     return Number(!this.side);
@@ -36,7 +40,7 @@ class Match {
   play(card: CardType) {
     const [damage, endTurn] = resolveDamage(card, this.stack[0]);
     // replace the top card
-    this.stack = [card, ...this.stack];
+    this.stack = [...this.stack, card];
 
     this.dealDamage(damage);
 
@@ -59,6 +63,7 @@ class Match {
 
   setSide(player: Player): Side | undefined {
     for (let side: Side = 0; side < 2; side++) {
+      console.log(`is the ${side} free?`, !this.players[side]);
       if (!this.players[side]) {
         this.players[side] = player;
         return side;

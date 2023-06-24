@@ -6,7 +6,7 @@ import useSocket from "../hooks/useSocket";
 import { useNavigate, useParams } from "react-router-dom";
 import Pop from "./Pop";
 
-function App() {
+function Match() {
   const [stack, setStack] = useState<CardType[]>([]);
   const [hand, setHand] = useState<
     [CardType | null, CardType | null, CardType | null]
@@ -19,9 +19,9 @@ function App() {
   const [side, setSide] = useState<Side>(Side.Left);
   const [opposingSide, setOpposingSide] = useState<Side>(Side.Right);
   const [damage, setDamage] = useState<number[]>([]);
+  const [isReady, setIsReady] = useState<boolean>(false);
 
   const navigate = useNavigate();
-
   const { id: matchId } = useParams();
 
   const socketRef = useSocket({
@@ -30,6 +30,7 @@ function App() {
     play: (card: CardType) => {
       setStack((state) => [...state, card]);
     },
+    stack: setStack,
     inTurn: setIntTurn,
     hitPoints: setHitPoints,
     hurt: (payload) =>
@@ -41,13 +42,20 @@ function App() {
       } else if (gameState === "win") {
         window.alert("You win");
         navigate("/");
+      } else {
+        navigate("/");
       }
     },
     side: setSide,
+    enter: (payload) => {
+      console.log(payload);
+      setIsReady(payload);
+    },
+    leave: () => setIsReady(false),
   });
 
   const handlePlayCard = (index: number) => {
-    if (!inTurn) {
+    if (!isReady || !inTurn) {
       return;
     }
 
@@ -110,6 +118,7 @@ function App() {
         </section>
         <div className="py-4">
           <section className="relative h-60 flex justify-center items-center">
+            {!isReady && <div>Waiting for opponent to join...</div>}
             {stack.map((card, index) => (
               <div
                 key={index}
@@ -126,7 +135,10 @@ function App() {
             ))}
           </section>
         </div>
-        <section className="columns-3" style={{ opacity: inTurn ? 1 : 0.5 }}>
+        <section
+          className="columns-3"
+          style={{ opacity: isReady && inTurn ? 1 : 0.5 }}
+        >
           {hand.map((card, index) =>
             card ? (
               <Card
@@ -146,4 +158,4 @@ function App() {
   );
 }
 
-export default App;
+export default Match;

@@ -1,11 +1,10 @@
-import { FunctionComponent, useContext, useState } from "react";
+import { FunctionComponent, useState } from "react";
 import useSocket from "./hooks/useSocket";
-import { User } from "./context/User";
 import { useNavigate } from "react-router-dom";
 
 const Queue: FunctionComponent<{}> = () => {
   const [queue, setQueue] = useState<string[]>([]);
-  const { id, setId } = useContext(User);
+  const [id, setId] = useState<string>("");
   const [challenges, setChallenge] = useState<string[]>([]);
 
   const navigate = useNavigate();
@@ -17,6 +16,7 @@ const Queue: FunctionComponent<{}> = () => {
       setChallenge((state) => [...state, matchId]);
     },
     startMatch: (matchId: string) => {
+      socketRef.current?.disconnect();
       navigate(`/match/${matchId}`);
     },
   });
@@ -50,7 +50,9 @@ const Queue: FunctionComponent<{}> = () => {
             <div className="flex justify-between" key={index}>
               <div className={`${item === id ? "font-bold" : ""}`}>{item} </div>
               <div>
-                {item !== id && (
+                {item === id ? (
+                  <div>This is you</div>
+                ) : (
                   <button onClick={() => handleChallenge(item)}>
                     Challenge
                   </button>

@@ -10,7 +10,7 @@ const Pop: FunctionComponent<PropsWithChildren<{}>> = ({ children }) => {
   const [animate, setAnimate] = useState<boolean>(false);
 
   useEffect(() => {
-    punch.play();
+    punch.play().catch(console.log);
     setTimeout(() => {
       setAnimate(true);
     }, 250);
@@ -20,9 +20,7 @@ const Pop: FunctionComponent<PropsWithChildren<{}>> = ({ children }) => {
 
   return (
     <div
-      className={`absolute transition-opacity ${
-        animate ? "opacity-0" : ""
-      }`}
+      className={`absolute transition-opacity ${animate ? "opacity-0" : ""}`}
     >
       {children}
     </div>

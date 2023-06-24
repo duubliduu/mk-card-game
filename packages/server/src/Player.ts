@@ -98,15 +98,21 @@ class Player {
     const side = this.match.setSide(this);
 
     if (side === undefined) {
+      console.log("could not resolve side");
       return false;
     }
+
+    console.log("you are now side", side);
 
     // Set side
     this.side = side;
 
+    // Push the current stack to player
+    this.socket.emit("stack", this.match.stack);
+
     // Join the room
     this.socket.leave("queue");
-    this.socket.join(match.id);
+    this.socket.join(this.match.id);
 
     this.match.on("afterPlay", () => {
       this.socket.emit("hitPoints", this.match?.hitPoints);
@@ -127,7 +133,7 @@ class Player {
   }
 
   public leaveMatch() {
-    if (this.match && this.side) {
+    if (this.match && this.side !== undefined) {
       // Remove self from match
       this.match.players[this.side] = null;
       // Return to queue
