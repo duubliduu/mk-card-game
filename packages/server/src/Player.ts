@@ -100,6 +100,7 @@ class Player {
     // Set side
     this.side = side;
 
+    // Join the room
     this.socket.leave("queue");
     this.socket.join(match.id);
 
@@ -112,6 +113,9 @@ class Player {
         this.socket.broadcast.to(this.match!.id).emit("gameOver", "win");
         // remove the match
         this.match = null;
+        // Return to queue
+        this.socket.leave(match.id);
+        this.socket.join("queue");
         onGameOver();
       }
     });
