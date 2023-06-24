@@ -1,7 +1,7 @@
 import { CardType } from "../types";
 
-const calculateDamage = (attacker: CardType) => {
-  return attacker.weight * 10;
+const calculateDamage = (attacker: CardType, defender: CardType) => {
+  return attacker.weight * 10 + defender.pressure  *5;
 };
 
 // -1 they get the turn OR they get to go again
@@ -40,7 +40,7 @@ export const resolveDamage = (
   // damage is depending on the weight
   // weight defines the start and recovery
   return [
-    calculateDamage(attacker),
+    calculateDamage(attacker, defender),
     attacker.pressure + defender.pressure < 0 || // if either one is defending
       attacker.weight === 3, // Heavy attack ends the turn
   ];

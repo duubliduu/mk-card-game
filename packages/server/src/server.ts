@@ -46,16 +46,40 @@ io.on("connection", (socket) => {
 
     players[socket.id].joinMatch(match, () => {
       delete matches[matchId];
+      socket.emit("gameOver");
     });
   });
 
   socket.on("disconnect", () => {
+    const player = players[socket.id];
+
+    if (player && player.match) {
+      const matchId = player.match.id;
+
+      // Leave the match
+      player.leaveMatch();
+
+      // If the match still exists
+      if (matches[matchId]) {
+        const isMatchVacant = Object.values(matches[matchId].players).every(
+          (x) => x === null
+        );
+
+        // If both players has left
+        if (isMatchVacant) {
+          // Remove match form memory
+          delete matches[matchId];
+        }
+      }
+    }
+
+    // Remove player from memory
     delete players[socket.id];
   });
 
   socket.nsp.to("queue").emit("queue", Object.keys(players));
 });
 
-console.log("Listening port 8080");
-
 io.listen(8080);
+
+console.log("Listening port 8080");

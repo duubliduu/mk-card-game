@@ -26,6 +26,7 @@ class Match {
 
   dealDamage(damage: number) {
     this.hitPoints[this.opposingSide] -= damage;
+    this.players[this.opposingSide]?.hurt(damage);
   }
 
   endTurn() {
@@ -46,9 +47,9 @@ class Match {
     this.trigger("afterPlay");
   }
 
-  private trigger(event: string) {
+  private trigger(event: string, ...params: any[]) {
     this.events[event].forEach((callback) => {
-      callback();
+      callback(...params);
     });
   }
 

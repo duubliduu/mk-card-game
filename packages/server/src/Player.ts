@@ -88,6 +88,10 @@ class Player {
     return this.match.hitPoints[this.side] > 0;
   }
 
+  public hurt(damage: number) {
+    this.socket.emit("hurt", damage);
+  }
+
   public joinMatch(match: Match, onGameOver: Function) {
     this.match = match;
 
@@ -111,17 +115,27 @@ class Player {
       if (this.resolveGameState() === false) {
         this.socket.emit("gameOver", "lose");
         this.socket.broadcast.to(this.match!.id).emit("gameOver", "win");
-        // remove the match
-        this.match = null;
-        // Return to queue
-        this.socket.leave(match.id);
-        this.socket.join("queue");
+
+        this.leaveMatch();
+
         onGameOver();
       }
     });
 
     this.socket.emit("side", this.side);
     this.socket.emit("inTurn", this.inTurn);
+  }
+
+  public leaveMatch() {
+    if (this.match && this.side) {
+      // Remove self from match
+      this.match.players[this.side] = null;
+      // Return to queue
+      this.socket.leave(this.match.id);
+      this.socket.join("queue");
+
+      this.match = null;
+    }
   }
 
   toString() {

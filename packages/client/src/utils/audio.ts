@@ -1,1 +1,1 @@
-export const punch = new Audio("audio/light-punch.wav");
+export const punch = new Audio("/audio/light-punch.wav");

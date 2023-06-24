@@ -4,6 +4,7 @@ import { CardType, Side } from "../types";
 import useSocket from "../hooks/useSocket";
 
 import { useNavigate, useParams } from "react-router-dom";
+import Pop from "./Pop";
 
 function App() {
   const [stack, setStack] = useState<CardType[]>([]);
@@ -15,7 +16,9 @@ function App() {
     [Side.Left]: 100,
     [Side.Right]: 100,
   });
-  const [side, setSide] = useState<Side>();
+  const [side, setSide] = useState<Side>(Side.Left);
+  const [opposingSide, setOpposingSide] = useState<Side>(Side.Right);
+  const [damage, setDamage] = useState<number[]>([]);
 
   const navigate = useNavigate();
 
@@ -29,7 +32,9 @@ function App() {
     },
     inTurn: setIntTurn,
     hitPoints: setHitPoints,
-    gameOver: (gameState?: string) => {
+    hurt: (payload) =>
+      setDamage((state) => (payload ? [...state, payload] : state)),
+    gameOver: (gameState?: "win" | "lose") => {
       if (gameState === "lose") {
         window.alert("You lose");
         navigate("/");
@@ -56,10 +61,16 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    setOpposingSide(Number(!side));
+  }, [side]);
+
   return (
     <div className="bg-gray-100 h-screen">
-      <div>Side {side}</div>
       <div className="container mx-auto py-4 px-4">
+        <div>
+          <a href="/">Exit</a>
+        </div>
         <section className="flex justify-between flex-row">
           <div className="w-1/2 relative">
             <div
@@ -67,14 +78,14 @@ function App() {
               style={{
                 background: "red",
                 transition: "width 1s",
-                width: `${hitPoints[Side.Left]}%`,
+                width: `${hitPoints[side]}%`,
               }}
             />
             <div
               className="h-2 absolute left-0"
               style={{
                 background: "green",
-                width: `${hitPoints[Side.Left]}%`,
+                width: `${hitPoints[side]}%`,
               }}
             />
           </div>
@@ -85,14 +96,14 @@ function App() {
               style={{
                 background: "red",
                 transition: "width 1s",
-                width: `${hitPoints[Side.Right]}%`,
+                width: `${hitPoints[opposingSide]}%`,
               }}
             />
             <div
               className="h-2 absolute right-0"
               style={{
                 background: "green",
-                width: `${hitPoints[Side.Right]}%`,
+                width: `${hitPoints[opposingSide]}%`,
               }}
             />
           </div>
@@ -103,10 +114,15 @@ function App() {
               <div
                 key={index}
                 className="absolute"
-                style={{ bottom: 10 + index, zIndex: index * 100 }}
+                style={{ bottom: 10 + index }}
               >
                 <Card {...card} />
               </div>
+            ))}
+            {damage.map((item, index) => (
+              <Pop key={index}>
+                <div className="text-7xl font-bold">{item}</div>
+              </Pop>
             ))}
           </section>
         </div>
