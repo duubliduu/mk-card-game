@@ -59,6 +59,17 @@ function Match() {
     socketRef.current?.emit("play", index);
   };
 
+  const handleSendChallenge = () => {
+    if (typeof navigator.share !== "function") {
+      return; // The share method works only with SSL
+    }
+    return navigator.share({
+      url: window.location.href,
+      text: "Take me on in CARD-FIGHTER-GAME!",
+      title: "CHALLENGE | Combat Cards",
+    });
+  };
+
   useEffect(() => {
     if (matchId) {
       socketRef.current?.emit("match", matchId);
@@ -73,8 +84,9 @@ function Match() {
   return (
     <div className="bg-gray-100 h-screen">
       <div className="container mx-auto py-4 px-4">
-        <div className="pb-4">
+        <div className="pb-4 flex justify-between">
           <a href="/">Exit</a>
+          <button onClick={handleSendChallenge}>Send a CHALLENGE</button>
         </div>
         <section className="flex justify-between flex-row">
           <div className="w-1/2 relative">

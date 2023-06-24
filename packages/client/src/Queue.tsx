@@ -38,11 +38,11 @@ const Queue: FunctionComponent<{}> = () => {
 
   return (
     <div className="container px-4 py-4 max-w-content">
-      <header className="text-2xl pb-4">
+      <header className="font-bold text-2xl pb-2 text-red-700">
         <h1>Combat Cards POC</h1>
       </header>
       <section>
-        <div className="pb-4">
+        <div >
           {challenges.map((matchId, index) => (
             <div
               className="flex justify-between items-center rounded p-2 mb-1 text-xls border-dashed border-2 border-red-700"
@@ -55,11 +55,19 @@ const Queue: FunctionComponent<{}> = () => {
                 href={`/match/${matchId}`}
                 className="bg-red-700 rounded font-bold text-white p-2"
               >
-                FIGHT!
+                Accept
               </a>
             </div>
           ))}
         </div>
+      </section>
+      <section className="my-4">
+        <button
+          onClick={handleShare}
+          className="rounded bg-red-700 px-1 py-2 text-white w-full font-bold"
+        >
+          INVITE someone!
+        </button>
       </section>
       <section>
         <div className="flex flex-col">
@@ -69,12 +77,6 @@ const Queue: FunctionComponent<{}> = () => {
           {!queue.length && (
             <div className="italic py-4">
               <p className="mb-4">There's no one in the queue :(</p>
-              <button
-                onClick={handleShare}
-                className="rounded bg-red-700 px-1 py-2 text-white w-full font-bold"
-              >
-                INVITE someone!
-              </button>
             </div>
           )}
           {queue.map((item, index) => (
