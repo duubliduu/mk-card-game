@@ -48,5 +48,5 @@ jobs:
       - name: Deploy package.json and lock to server
         run: rsync -r ./packages/server/package* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/combat-cards.duubliduu.com/server
 
-      - name: Start node server
-        run: ssh -t  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /var/www/combat-cards.duubliduu.com/server; npm i --omit=dev; npm run forever"
+      - name: Install
+        run: ssh -t  ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "cd /var/www/combat-cards.duubliduu.com/server; npm i --omit=dev"
