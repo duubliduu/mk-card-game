@@ -4,13 +4,20 @@ import {
   useEffect,
   useState,
 } from "react";
-import { punch } from "../utils/audio";
+import { hit, whiff } from "../utils/audio";
 
-const Pop: FunctionComponent<PropsWithChildren<{}>> = ({ children }) => {
+type PopProps = PropsWithChildren<{
+  sfx?: "hit" | "whiff";
+}>;
+
+const Pop: FunctionComponent<PopProps> = ({ children, sfx }) => {
   const [animate, setAnimate] = useState<boolean>(false);
 
   useEffect(() => {
-    punch.play().catch(console.log);
+    if (sfx === "hit") {
+      hit.play().catch(console.log);
+    } else if (sfx === "whiff") whiff.play().catch(console.log);
+
     setTimeout(() => {
       setAnimate(true);
     }, 250);

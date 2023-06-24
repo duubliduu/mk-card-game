@@ -1,1 +1,3 @@
-export const punch = new Audio("/audio/light-punch.wav");
+export const hit = new Audio("/audio/hit.wav");
+
+export const whiff = new Audio("/audio/whiff.mp3");

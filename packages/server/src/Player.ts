@@ -91,8 +91,12 @@ class Player {
     return this.match.hitPoints[this.side] > 0;
   }
 
-  public hurt(damage: number) {
-    this.socket.emit("hurt", damage);
+  public hurt(damage: number, message?: string) {
+    if (damage) {
+      this.socket.emit("pop", damage);
+    } else if (message) {
+      this.socket.emit("pop", message);
+    }
   }
 
   public joinMatch(match: Match, onGameOver: Function) {

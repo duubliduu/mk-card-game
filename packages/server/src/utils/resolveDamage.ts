@@ -1,7 +1,9 @@
 import { CardType, Guard, Stance } from "../types";
 
 const calculateDamage = (attacker: CardType, defender: CardType) => {
-  return attacker.weight * 10 + defender.pressure * 5;
+  return (
+    20 + attacker.weight * 5 + defender.pressure * 5 + attacker.pressure * 5
+  );
 };
 
 // -1 they get the turn OR they get to go again
@@ -10,17 +12,17 @@ const calculateDamage = (attacker: CardType, defender: CardType) => {
 export const resolveDamage = (
   attacker: CardType,
   defender: CardType
-): [number, boolean] => {
+): [number, boolean, string?] => {
   // If there's no defending card
   if (!defender) {
-    return [0, true];
+    return [0, true, "Starting Card"];
   }
 
   // you don't reach
   if (attacker.reach < defender.reach) {
     // return recovery time based on
     // negative damage means whiff
-    return [0, true];
+    return [0, true, "Out of reach!"];
   }
 
   // Mid hits every one
@@ -31,12 +33,12 @@ export const resolveDamage = (
     (defender.guard === Guard.Crouch && attacker.stance > Stance.Mid)
   ) {
     // you whiff again
-    return [0, true];
+    return [0, true, "Whiff!"];
   }
 
   // If both are defensive no damage
   if (attacker.pressure + defender.pressure === -2) {
-    return [0, true];
+    return [0, true, "Both Defending!"];
   }
 
   // It's a hit

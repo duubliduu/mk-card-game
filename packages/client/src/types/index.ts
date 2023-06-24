@@ -29,8 +29,8 @@ export enum Side {
 }
 
 export enum Guard {
-  Crouch,
-  Stand,
+  Crouching,
+  Standing,
   Air,
 }
 

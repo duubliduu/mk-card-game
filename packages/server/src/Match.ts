@@ -28,9 +28,9 @@ class Match {
     return Number(!this.side);
   }
 
-  dealDamage(damage: number) {
+  dealDamage(damage: number, message?: string) {
     this.hitPoints[this.opposingSide] -= damage;
-    this.players[this.opposingSide]?.hurt(damage);
+    this.players[this.opposingSide]?.hurt(damage, message);
   }
 
   endTurn() {
@@ -38,11 +38,11 @@ class Match {
   }
 
   play(card: CardType) {
-    const [damage, endTurn] = resolveDamage(card, this.stack[0]);
+    const [damage, endTurn, message] = resolveDamage(card, this.stack[0]);
     // replace the top card
     this.stack = [...this.stack, card];
 
-    this.dealDamage(damage);
+    this.dealDamage(damage, message);
 
     if (endTurn) {
       this.endTurn();

@@ -18,7 +18,7 @@ function Match() {
   });
   const [side, setSide] = useState<Side>(Side.Left);
   const [opposingSide, setOpposingSide] = useState<Side>(Side.Right);
-  const [damage, setDamage] = useState<number[]>([]);
+  const [pops, setPops] = useState<string[]>([]);
   const [isReady, setIsReady] = useState<boolean>(false);
 
   const navigate = useNavigate();
@@ -33,8 +33,8 @@ function Match() {
     stack: setStack,
     inTurn: setIntTurn,
     hitPoints: setHitPoints,
-    hurt: (payload) =>
-      setDamage((state) => (payload ? [...state, payload] : state)),
+    pop: (payload) =>
+      setPops((state) => (payload ? [...state, payload] : state)),
     gameOver: (gameState?: "win" | "lose") => {
       if (gameState === "lose") {
         window.alert("You lose!");
@@ -127,15 +127,23 @@ function Match() {
                 <Card {...card} />
               </div>
             ))}
-            {damage.map((item, index) => (
-              <Pop key={index}>
-                <div className="text-7xl font-bold">{item}</div>
+            {pops.map((item, index) => (
+              <Pop
+                key={index}
+                sfx={isNaN(item as unknown as number) ? "whiff" : "hit"}
+              >
+                <div
+                  className="font-bold align-center"
+                  style={{ fontSize: "10vw" }}
+                >
+                  {item}
+                </div>
               </Pop>
             ))}
           </section>
         </div>
         <section
-          className="columns-3"
+          className="flex justify-around"
           style={{ opacity: isReady && inTurn ? 1 : 0.5 }}
         >
           {hand.map((card, index) =>
