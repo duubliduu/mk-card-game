@@ -15,7 +15,6 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "@combat-cards/server": "^0.1.0",
     "@types/node": "^16.18.36",
     "@types/uuid": "^9.0.2",
     "nodemon": "^2.0.22",
