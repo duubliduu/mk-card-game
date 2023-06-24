@@ -37,20 +37,17 @@ function Match() {
       setDamage((state) => (payload ? [...state, payload] : state)),
     gameOver: (gameState?: "win" | "lose") => {
       if (gameState === "lose") {
-        window.alert("You lose");
+        window.alert("You lose!");
         navigate("/");
       } else if (gameState === "win") {
-        window.alert("You win");
+        window.alert("You win!");
         navigate("/");
       } else {
         navigate("/");
       }
     },
     side: setSide,
-    enter: (payload) => {
-      console.log(payload);
-      setIsReady(payload);
-    },
+    enter: setIsReady,
     leave: () => setIsReady(false),
   });
 
@@ -76,13 +73,13 @@ function Match() {
   return (
     <div className="bg-gray-100 h-screen">
       <div className="container mx-auto py-4 px-4">
-        <div>
+        <div className="pb-4">
           <a href="/">Exit</a>
         </div>
         <section className="flex justify-between flex-row">
           <div className="w-1/2 relative">
             <div
-              className="h-2 absolute left-0"
+              className="h-4 absolute left-0"
               style={{
                 background: "red",
                 transition: "width 1s",
@@ -90,17 +87,18 @@ function Match() {
               }}
             />
             <div
-              className="h-2 absolute left-0"
+              className="h-4 absolute left-0"
               style={{
                 background: "green",
                 width: `${hitPoints[side]}%`,
               }}
             />
+            <div className="pt-4 text-sm">You</div>
           </div>
-          <div>VS.</div>
+          <div className="px-2 italic">VS</div>
           <div className="w-1/2 flex justify-end relative">
             <div
-              className="h-2 absolute right-0"
+              className="h-4 absolute right-0"
               style={{
                 background: "red",
                 transition: "width 1s",
@@ -108,12 +106,13 @@ function Match() {
               }}
             />
             <div
-              className="h-2 absolute right-0"
+              className="h-4 absolute right-0"
               style={{
                 background: "green",
                 width: `${hitPoints[opposingSide]}%`,
               }}
             />
+            <div className="pt-4 text-sm">Opponent</div>
           </div>
         </section>
         <div className="py-4">

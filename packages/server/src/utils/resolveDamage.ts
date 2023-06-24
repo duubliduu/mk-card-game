@@ -1,7 +1,7 @@
-import { CardType } from "../types";
+import { CardType, Guard, Stance } from "../types";
 
 const calculateDamage = (attacker: CardType, defender: CardType) => {
-  return attacker.weight * 10 + defender.pressure  *5;
+  return attacker.weight * 10 + defender.pressure * 5;
 };
 
 // -1 they get the turn OR they get to go again
@@ -23,10 +23,13 @@ export const resolveDamage = (
     return [0, true];
   }
 
-  // standing whiffs over crouching
-  // crouching hits standing
-  // crouching whiffs under jump
-  if (attacker.stance > defender.stance) {
+  // Mid hits every one
+  // hi doesnt hit crouch
+  // low doesnt hit air
+  if (
+    (defender.guard === Guard.Air && attacker.stance < Stance.Mid) ||
+    (defender.guard === Guard.Crouch && attacker.stance > Stance.Mid)
+  ) {
     // you whiff again
     return [0, true];
   }

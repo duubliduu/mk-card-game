@@ -15,6 +15,10 @@ const io = new Server(httpServer, {
 const players: Record<string, Player> = {};
 const matches: Record<string, Match> = {};
 
+const getOtherPlayers = (socketId: string) => {
+  return Object.keys(players).filter((id) => id === socketId);
+};
+
 io.on("connection", (socket) => {
   // Everyone goes to the queue by default
   socket.join("queue");
@@ -22,14 +26,14 @@ io.on("connection", (socket) => {
   // Identify the user for them
   socket.emit("id", socket.id);
 
-  // Add new user to list
-  players[socket.id] = new Player(socket);
-
   // Send list of players to the connected user
   socket.emit("queue", Object.keys(players));
 
+  // Add new user to list
+  players[socket.id] = new Player(socket);
+
   // Everyone else gets the new list
-  socket.broadcast.to("queue").emit("queue", Object.keys(players));
+  socket.broadcast.to("queue").emit("queue", getOtherPlayers(socket.id));
 
   // User challenges someone
   socket.on("challenge", (opponentId) => {
@@ -93,7 +97,7 @@ io.on("connection", (socket) => {
     delete players[socket.id];
 
     // You're out, everyone gets the update list
-    socket.broadcast.to("queue").emit("queue", Object.keys(players));
+    socket.broadcast.to("queue").emit("queue", getOtherPlayers(socket.id));
   });
 });
 

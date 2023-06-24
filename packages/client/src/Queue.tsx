@@ -26,34 +26,54 @@ const Queue: FunctionComponent<{}> = () => {
   };
 
   return (
-    <div className="container px-4 py-4">
-      <div>My ID {id}</div>
+    <div className="container px-4 py-4 max-w-content">
+      <header className="text-2xl pb-4">
+        <h1>Combat Cards POC</h1>
+      </header>
       <section>
-        <div>
+        <div className="pb-4">
           {challenges.map((matchId, index) => (
-            <div className="flex justify-between" key={index}>
-              <div>Challenge!</div>
-              <div>
-                <a href={`/match/${matchId}`}>Accept</a>
-              </div>
+            <div
+              className="flex justify-between items-center rounded p-2 mb-1 text-xls border-dashed border-2 border-red-700"
+              key={index}
+            >
+              <span className="text-red-700 font-bold">You have a CHALLENGE!</span>
+              <a
+                href={`/match/${matchId}`}
+                className="bg-red-700 rounded font-bold text-white p-2"
+              >
+                FIGHT!
+              </a>
             </div>
           ))}
         </div>
       </section>
       <section>
         <div className="flex flex-col">
-          <div className="flex justify-between">
-            <div>ID</div>
-            <div>Action</div>
+          <div className="flex justify-between font-bold pb-1 mb-1 border-b-2 border-slate-200">
+            <div>Players in the queue</div>
           </div>
           {queue.map((item, index) => (
-            <div className="flex justify-between" key={index}>
-              <div className={`${item === id ? "font-bold" : ""}`}>{item} </div>
+            <div
+              className="flex justify-between items-center pb-1 mb-1 border-dashed border-b-2 border-inherit"
+              key={item}
+            >
+              <div className={`${item === id ? "italic" : ""}`}>
+                {item === id ? "You" : "Someone else"}
+              </div>
               <div>
                 {item === id ? (
-                  <div>This is you</div>
+                  <button
+                    disabled
+                    className="rounded bg-slate-400 p-2 text-white text-sm font-bold"
+                  >
+                    Challenge
+                  </button>
                 ) : (
-                  <button onClick={() => handleChallenge(item)}>
+                  <button
+                    className="rounded bg-red-700 p-2 text-white text-sm font-bold"
+                    onClick={() => handleChallenge(item)}
+                  >
                     Challenge
                   </button>
                 )}

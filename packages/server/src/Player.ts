@@ -19,6 +19,7 @@ class Player {
 
     // generate random deck for the player
     this.deck = generateDeck();
+
     // Draw three
     this.draw(0, 1, 2);
 
@@ -54,8 +55,10 @@ class Player {
 
       // the played card goes to everybody
       socket.nsp.to(this.match.id).emit("play", cardToPlay);
+
       // hand goes just to you
       socket.emit("hand", this.hand);
+
       // send side to everyone
       socket.emit("side", this.side);
     });
@@ -98,11 +101,8 @@ class Player {
     const side = this.match.setSide(this);
 
     if (side === undefined) {
-      console.log("could not resolve side");
       return false;
     }
-
-    console.log("you are now side", side);
 
     // Set side
     this.side = side;

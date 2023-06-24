@@ -63,7 +63,6 @@ class Match {
 
   setSide(player: Player): Side | undefined {
     for (let side: Side = 0; side < 2; side++) {
-      console.log(`is the ${side} free?`, !this.players[side]);
       if (!this.players[side]) {
         this.players[side] = player;
         return side;

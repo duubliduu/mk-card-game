@@ -6,6 +6,7 @@ import reportWebVitals from "./reportWebVitals";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Queue from "./Queue";
 import UserProvider from "./context/User";
+import Deck from "./components/Deck";
 
 const router = createBrowserRouter([
   {
@@ -15,6 +16,10 @@ const router = createBrowserRouter([
   {
     path: "/match/:id?",
     element: <Match />,
+  },
+  {
+    path: "/deck",
+    element: <Deck />,
   },
 ]);
 
