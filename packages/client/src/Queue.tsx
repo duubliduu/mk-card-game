@@ -25,6 +25,17 @@ const Queue: FunctionComponent<{}> = () => {
     socketRef.current?.emit("challenge", id);
   };
 
+  const handleShare = () => {
+    if (typeof navigator.share !== "function") {
+      return; // The share method works only with SSL
+    }
+    return navigator.share({
+      url: window.location.href,
+      text: "Come check out this awesome FIGHTING-CARD-GAME!",
+      title: "INVITATION | Combat Cards",
+    });
+  };
+
   return (
     <div className="container px-4 py-4 max-w-content">
       <header className="text-2xl pb-4">
@@ -37,7 +48,9 @@ const Queue: FunctionComponent<{}> = () => {
               className="flex justify-between items-center rounded p-2 mb-1 text-xls border-dashed border-2 border-red-700"
               key={index}
             >
-              <span className="text-red-700 font-bold">You have a CHALLENGE!</span>
+              <span className="text-red-700 font-bold">
+                You have a CHALLENGE!
+              </span>
               <a
                 href={`/match/${matchId}`}
                 className="bg-red-700 rounded font-bold text-white p-2"
@@ -53,6 +66,17 @@ const Queue: FunctionComponent<{}> = () => {
           <div className="flex justify-between font-bold pb-1 mb-1 border-b-2 border-slate-200">
             <div>Players in the queue</div>
           </div>
+          {!queue.length && (
+            <div className="italic py-4">
+              <p className="mb-4">There's no one in the queue :(</p>
+              <button
+                onClick={handleShare}
+                className="rounded bg-red-700 px-1 py-2 text-white w-full font-bold"
+              >
+                INVITE someone!
+              </button>
+            </div>
+          )}
           {queue.map((item, index) => (
             <div
               className="flex justify-between items-center pb-1 mb-1 border-dashed border-b-2 border-inherit"
