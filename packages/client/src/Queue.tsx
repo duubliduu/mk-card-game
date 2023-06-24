@@ -1,11 +1,11 @@
 import { FunctionComponent, useContext, useState } from "react";
 import useSocket from "./hooks/useSocket";
-import { AppContext } from "./contexts/AppContext";
+import { User } from "./context/User";
 import { useNavigate } from "react-router-dom";
 
 const Queue: FunctionComponent<{}> = () => {
   const [queue, setQueue] = useState<string[]>([]);
-  const { id, setId } = useContext(AppContext);
+  const { id, setId } = useContext(User);
   const [challenges, setChallenge] = useState<string[]>([]);
 
   const navigate = useNavigate();

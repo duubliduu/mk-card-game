@@ -10,7 +10,7 @@ type AppContextProps = {
   setId: (id: string) => void;
 };
 
-export const AppContext = createContext<AppContextProps>({
+export const User = createContext<AppContextProps>({
   id: undefined,
   setId: () => {},
 });
@@ -20,9 +20,7 @@ const AppContextProvider: FunctionComponent<PropsWithChildren<{}>> = ({
 }) => {
   const [id, setId] = useState<string | undefined>();
 
-  return (
-    <AppContext.Provider value={{ id, setId }}>{children}</AppContext.Provider>
-  );
+  return <User.Provider value={{ id, setId }}>{children}</User.Provider>;
 };
 
 export default AppContextProvider;
