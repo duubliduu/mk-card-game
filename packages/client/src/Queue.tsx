@@ -1,28 +1,29 @@
-import { FunctionComponent, useState } from "react";
-import useSocket from "./hooks/useSocket";
+import React, {
+  ChangeEventHandler,
+  FunctionComponent,
+  useContext,
+} from "react";
 import { useNavigate } from "react-router-dom";
+import { QueueContext } from "./context/QueueContext";
+import useSocket from "./hooks/useSocket";
 
-const Queue: FunctionComponent<{}> = () => {
-  const [queue, setQueue] = useState<string[]>([]);
-  const [id, setId] = useState<string>("");
-  const [challenges, setChallenge] = useState<string[]>([]);
+const Queue: FunctionComponent = () => {
+  const { id, queue, challenges, name, setName } = useContext(QueueContext);
 
-  const navigate = useNavigate();
-
-  const socketRef = useSocket({
-    id: setId,
-    queue: setQueue,
-    challenge: (matchId: string) => {
-      setChallenge((state) => [...state, matchId]);
-    },
+  const emit = useSocket({
     startMatch: (matchId: string) => {
-      socketRef.current?.disconnect();
       navigate(`/match/${matchId}`);
     },
   });
 
+  const navigate = useNavigate();
+
   const handleChallenge = (id: string) => {
-    socketRef.current?.emit("challenge", id);
+    emit("challenge", id);
+  };
+
+  const handleAccept = (matchId: string) => {
+    navigate(`/match/${matchId}`);
   };
 
   const handleShare = () => {
@@ -36,32 +37,50 @@ const Queue: FunctionComponent<{}> = () => {
     });
   };
 
+  const handleChangeName: ChangeEventHandler<HTMLInputElement> = (event) => {
+    setName(event.target.value);
+  };
+
   return (
     <div className="container px-4 py-4 max-w-content">
-      <header className="font-bold text-2xl pb-2 text-red-700">
-        <h1>Combat Cards POC</h1>
+      <header className="pb-2">
+        <h1 className="font-bold text-2xl pb-2 text-red-700">
+          Combat Cards POC
+        </h1>
+        <div className="h-16 w-full">
+          <label className="relative flex flex-col">
+            <span className="abolute text-xs p-2">Change name</span>
+            <input
+              onChange={handleChangeName}
+              className="absolute bg-transparent border-2 rounded p-2 pt-6 w-full"
+              type="text"
+              value={name}
+              maxLength={20}
+            />
+          </label>
+        </div>
       </header>
       <section>
-        <div >
-          {challenges.map((matchId, index) => (
+        <div>
+          {Object.entries(challenges).map(([key, { by, matchId }]) => (
             <div
               className="flex justify-between items-center rounded p-2 mb-1 text-xls border-dashed border-2 border-red-700"
-              key={index}
+              key={key}
             >
               <span className="text-red-700 font-bold">
-                You have a CHALLENGE!
+                <pre>{by}</pre>
               </span>
-              <a
-                href={`/match/${matchId}`}
+              <button
+                onClick={() => handleAccept(matchId)}
                 className="bg-red-700 rounded font-bold text-white p-2"
               >
-                Accept
-              </a>
+                Join
+              </button>
             </div>
           ))}
         </div>
       </section>
-      <section className="my-4">
+      <section className="py-2">
         <button
           onClick={handleShare}
           className="rounded bg-red-700 px-1 py-2 text-white w-full font-bold"
@@ -79,16 +98,18 @@ const Queue: FunctionComponent<{}> = () => {
               <p className="mb-4">There's no one in the queue :(</p>
             </div>
           )}
-          {queue.map((item, index) => (
+          {queue.map(([itemId, itemName]) => (
             <div
               className="flex justify-between items-center pb-1 mb-1 border-dashed border-b-2 border-inherit"
-              key={item}
+              key={itemId}
             >
-              <div className={`${item === id ? "italic" : ""}`}>
-                {item === id ? "You" : "Someone else"}
+              <div className={`${itemId === id ? "italic" : ""}`}>
+                <pre className="text-sm">
+                  [{itemId}] {itemName || <em>Ano</em>}
+                </pre>
               </div>
               <div>
-                {item === id ? (
+                {itemId === id ? (
                   <button
                     disabled
                     className="rounded bg-slate-400 p-2 text-white text-sm font-bold"
@@ -98,7 +119,7 @@ const Queue: FunctionComponent<{}> = () => {
                 ) : (
                   <button
                     className="rounded bg-red-700 p-2 text-white text-sm font-bold"
-                    onClick={() => handleChallenge(item)}
+                    onClick={() => handleChallenge(itemId)}
                   >
                     Challenge
                   </button>

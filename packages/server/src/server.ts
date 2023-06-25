@@ -2,6 +2,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import Match from "./Match";
 import Player from "./Player";
+import logger from "./utils/logger";
 
 const httpServer = createServer();
 
@@ -12,14 +13,24 @@ const io = new Server(httpServer, {
   },
 });
 
+type Challenge = {
+  by: string;
+  matchId: string;
+};
+
 const players: Record<string, Player> = {};
 const matches: Record<string, Match> = {};
+const challenges: { [id: string]: Challenge } = {};
 
 const getOtherPlayers = (socketId: string) => {
-  return Object.keys(players).filter((id) => id === socketId);
+  return Object.entries(players)
+    .map(([id, player]) => [id, player.name])
+    .filter(([id]) => id === socketId);
 };
 
 io.on("connection", (socket) => {
+  logger.info("User connected", { user: socket.id });
+
   // Everyone goes to the queue by default
   socket.join("queue");
 
@@ -27,7 +38,10 @@ io.on("connection", (socket) => {
   socket.emit("id", socket.id);
 
   // Send list of players to the connected user
-  socket.emit("queue", Object.keys(players));
+  socket.emit(
+    "queue",
+    Object.entries(players).map(([id, player]) => [id, player.name])
+  );
 
   // Add new user to list
   players[socket.id] = new Player(socket);
@@ -37,14 +51,24 @@ io.on("connection", (socket) => {
 
   // User challenges someone
   socket.on("challenge", (opponentId) => {
+    logger.info("Challenge event", { id: socket.id, opponentId });
+
     // Create a match
     const match = new Match();
 
     // save the match
     matches[match.id] = match;
 
+    const challenge: Challenge = {
+      by: players[socket.id].name || socket.id,
+      matchId: match.id,
+    };
+    const challengeKey: string = `${opponentId}-${match.id}`;
+
+    challenges[challengeKey] = challenge;
+
     // send the match to opponent
-    socket.to(opponentId).emit("challenge", match.id);
+    socket.to(opponentId).emit("challenges", { [challengeKey]: challenge });
 
     // send the match to self
     socket.emit("startMatch", match.id);
@@ -54,7 +78,23 @@ io.on("connection", (socket) => {
   socket.on("match", (matchId: string) => {
     const match = matches[matchId];
 
+    const challengeKey = `${socket.id}-${matchId}`;
+    // Delete the challenge
+    delete challenges[challengeKey];
+
+    logger.info("User enter the match", {
+      user: socket.id,
+      matchId,
+      challengeKey,
+    });
+
+    socket.emit("challenges", {});
+
     if (!match) {
+      logger.info("User tried to join a match no longer available", {
+        matchId,
+        user: socket.id,
+      });
       socket.emit("message", `Match with id ${matchId} doesn't exist`);
       socket.emit("gameOver");
       return;
@@ -65,7 +105,36 @@ io.on("connection", (socket) => {
       socket.emit("gameOver");
     });
 
-    socket.nsp.to(matchId).emit("enter", match.isReady);
+    if (!!players[socket.id].opponent) {
+      // Notify one entering a match in progress
+      socket.emit("enter", match.isReady);
+    }
+    // Notify the challenger that you have joined
+    socket.broadcast.to(matchId).emit("enter", match.isReady);
+  });
+
+  socket.on("name", (name: string) => {
+    logger.info("User changed name", { name, user: socket.id });
+    players[socket.id].name = name;
+    socket.broadcast.to("queue").emit("queue", getOtherPlayers(socket.id));
+  });
+
+  // Leaving match will be seen as a forfeit
+  // Leaving a match will delete it
+  socket.on("leave", (matchId: string) => {
+    const opponentId = players[socket.id].leaveMatch();
+
+    logger.info("User left the match", { id: socket.id, matchId });
+
+    if (opponentId) {
+      // Notify the opponent of my leaving
+      socket.to(opponentId).emit("leave");
+      logger.info("Notifiied the opponent", { opponentId, matchId });
+    } else if (matches[matchId]) {
+      // Remove the match when you leave as the last one
+      delete matches[matchId];
+      logger.info("Match vacated and deleted", { matchId });
+    }
   });
 
   socket.on("disconnect", () => {
@@ -76,7 +145,7 @@ io.on("connection", (socket) => {
 
       socket.nsp.to(matchId).emit("leave");
 
-      // Leave the match
+      // Leave the match if any
       player.leaveMatch();
 
       // If the match still exists
@@ -85,7 +154,7 @@ io.on("connection", (socket) => {
           (x) => x === null
         );
 
-        // If both players has left
+        // If both players left
         if (isMatchVacant) {
           // Remove match form memory
           delete matches[matchId];
@@ -103,4 +172,4 @@ io.on("connection", (socket) => {
 
 io.listen(8080);
 
-console.log("Server started at 8080");
+logger.info("Service available at 8080");

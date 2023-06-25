@@ -1,22 +1,22 @@
-import { useEffect, useRef } from "react";
-import { io, Socket } from "socket.io-client";
+import { useCallback, useEffect } from "react";
+import socket from "../services/socket";
 
-const useSocket = (events: { [key: string]: (...args: any[]) => void }) => {
-  const socketRef = useRef<Socket>();
-
+const useSocket = (events: { [event: string]: (...args: any[]) => void }) => {
   useEffect(() => {
-    socketRef.current = io(process.env.REACT_APP_SOCKET_URL || {});
-
     Object.entries(events).forEach(([key, value]) => {
-      socketRef.current!.on(key, value);
+      socket.on(key, value);
     });
     return () => {
-      socketRef.current?.disconnect();
+      Object.keys(events).forEach((key) => {
+        socket.off(key);
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return socketRef;
+  return useCallback((event: string, payload?: any) => {
+    socket.emit(event, payload);
+  }, []);
 };
 
 export default useSocket;

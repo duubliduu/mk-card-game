@@ -20,7 +20,7 @@ const Pop: FunctionComponent<PopProps> = ({ children, sfx }) => {
 
     setTimeout(() => {
       setAnimate(true);
-    }, 250);
+    }, 500);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

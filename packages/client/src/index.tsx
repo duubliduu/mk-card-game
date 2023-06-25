@@ -5,8 +5,9 @@ import Match from "./components/Match";
 import reportWebVitals from "./reportWebVitals";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Queue from "./Queue";
-import UserProvider from "./context/User";
 import Deck from "./components/Deck";
+import QueueProvider from "./context/QueueContext";
+import ModalProvider from "./context/ModalContext";
 
 const router = createBrowserRouter([
   {
@@ -26,10 +27,13 @@ const router = createBrowserRouter([
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
+
 root.render(
-  <UserProvider>
-    <RouterProvider router={router} />
-  </UserProvider>
+  <QueueProvider>
+    <ModalProvider>
+      <RouterProvider router={router} />
+    </ModalProvider>
+  </QueueProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function

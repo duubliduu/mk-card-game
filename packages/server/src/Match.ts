@@ -29,16 +29,25 @@ class Match {
   }
 
   dealDamage(damage: number, message?: string) {
-    this.hitPoints[this.opposingSide] -= damage;
+    if (this.hitPoints[this.opposingSide] < damage) {
+      this.hitPoints[this.opposingSide] = 0;
+    } else {
+      this.hitPoints[this.opposingSide] -= damage;
+    }
+
     this.players[this.opposingSide]?.hurt(damage, message);
   }
 
   endTurn() {
-    this.side = Number(!this.side);
+    this.side = this.opposingSide;
+  }
+
+  get topCard() {
+    return this.stack[this.stack.length - 1];
   }
 
   play(card: CardType) {
-    const [damage, endTurn, message] = resolveDamage(card, this.stack[0]);
+    const [damage, endTurn, message] = resolveDamage(card, this.topCard);
     // replace the top card
     this.stack = [...this.stack, card];
 
@@ -59,6 +68,16 @@ class Match {
 
   on(event: string, callback: Function) {
     this.events[event] = [...(this.events[event] || []), callback];
+  }
+
+  leave(socketId: string) {
+    (Object.keys(this.players) as unknown as [Side]).forEach((side) => {
+      const player = this.players[side as unknown as Side];
+      if (player && player.socket.id == socketId) {
+        // Remove the player from the game
+        this.players[side] = null;
+      }
+    });
   }
 
   setSide(player: Player): Side | undefined {

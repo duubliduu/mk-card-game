@@ -62,7 +62,7 @@ export const buildDeck = () => {
 const deck = buildDeck();
 
 const generateDeck = (): CardType[] => {
-  return deck.sort(() => Math.random() - 0.5);
+  return [...deck.sort(() => Math.random() - 0.5)];
 };
 
 export default generateDeck;
