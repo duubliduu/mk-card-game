@@ -1,9 +1,9 @@
 import { createServer } from "http";
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 import Match from "./Match";
 import Player from "./Player";
 import logger from "./utils/logger";
-import AISocket from "./AISocket";
+import AIClient from "./AIClient";
 
 const httpServer = createServer();
 
@@ -23,31 +23,27 @@ const players: Record<string, Player> = {};
 const matches: Record<string, Match> = {};
 const challenges: { [id: string]: Challenge } = {};
 
+const clients: { [id: string]: AIClient } = {};
+
 const getOtherPlayers = (socketId: string) => {
   return Object.entries(players)
     .map(([id, player]) => [id, player.name])
     .filter(([id]) => id === socketId);
 };
 
-const createPracticeMatch = (socket: Socket) => {
+const createPracticeMatch = () => {
   logger.info("User started match against the AI");
-
-  // Create new AI instance
-  const aiSocket = new AISocket(socket);
-
-  // Create AI player
-  const player = new Player(aiSocket);
-
-  // name the player
-  player.name = "AI";
-
-  // save AI player to memory
-  players[aiSocket.id] = player;
 
   // Create a match for this
   const match = new Match();
 
-  player.joinMatch(match);
+  const aiClient = new AIClient();
+
+  clients[aiClient.id] = aiClient;
+
+  matches[match.id] = match;
+
+  aiClient.socket.emit("match", match.id);
 
   return match;
 };
@@ -100,15 +96,15 @@ io.on("connection", (socket) => {
 
   // Enter the match
   socket.on("match", (matchId: string) => {
-    const match =
-      matchId === "AI" ? createPracticeMatch(socket) : matches[matchId];
+    const match = matchId === "AI" ? createPracticeMatch() : matches[matchId];
 
     // Delete the challenge
     const challengeKey = `${socket.id}-${matchId}`;
     delete challenges[challengeKey];
+
     socket.emit("challenges", {});
 
-    logger.info("User enter the match", {
+    logger.info("User entered a match", {
       user: socket.id,
       matchId: match.id,
       challengeKey,
@@ -142,20 +138,25 @@ io.on("connection", (socket) => {
 
   // Leaving match will be seen as a forfeit
   // Leaving a match will delete it
-  socket.on("leave", (matchId: string) => {
-    const opponentId = players[socket.id].leaveMatch();
+  socket.on("leave", () => {
+    const opponentId = players[socket.id].opponent?.id;
+    const matchId = players[socket.id].leaveMatch();
 
     logger.info("User left the match", { id: socket.id, matchId });
 
     if (opponentId) {
       // Notify the opponent of my leaving
       socket.to(opponentId).emit("leave");
-      logger.info("Notifiied the opponent", { opponentId, matchId });
-    } else if (matches[matchId]) {
-      // Remove the match when you leave as the last one
-      delete matches[matchId];
-      logger.info("Match vacated and deleted", { matchId });
+      logger.info("Say bye bye!", { opponentId, matchId });
     }
+
+    if (matchId) {
+      delete matches[matchId];
+    }
+
+    logger.info("Match was deleted!", {
+      matchId,
+    });
   });
 
   socket.on("disconnect", () => {

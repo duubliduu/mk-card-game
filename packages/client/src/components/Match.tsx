@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Card from "./Card";
 import { useNavigate, useParams } from "react-router-dom";
 import Pop from "./Pop";
@@ -176,6 +176,7 @@ function Match() {
         </section>
         <div className="py-4">
           <section className="relative h-60 flex justify-center items-center">
+
             {hasEnded && <div>The match has ended</div>}
             {isReady === undefined && (
               <div>Waiting for opponent to join...</div>

@@ -3,10 +3,9 @@ import { CardType, Side } from "./types";
 import generateDeck from "./utils/generateDeck";
 import Match from "./Match";
 import logger from "./utils/logger";
-import AISocket from "./AISocket";
 
 class Player {
-  socket: Socket | AISocket;
+  socket: Socket;
   name?: string;
   match: Match | null = null;
   deck: CardType[] = [];
@@ -17,7 +16,7 @@ class Player {
   ];
   side?: Side;
 
-  constructor(socket: Socket | AISocket) {
+  constructor(socket: Socket) {
     this.socket = socket;
 
     // Play emit from client
@@ -61,11 +60,6 @@ class Player {
   }
 
   get inTurn() {
-    logger.info("get inTurn", {
-      matchId: this.match?.id,
-      side: this.side,
-      matchSide: this.match?.side,
-    });
     return this.match && this.side === this.match.side;
   }
 
@@ -96,15 +90,6 @@ class Player {
       const [card] = this.deck.splice(0, 1);
       this.hand[index] = card;
     });
-  }
-
-  resolveGameState() {
-    if (!this.match || this.side === undefined) {
-      // This player is not in a game
-      return null;
-    }
-
-    return this.match.hitPoints[this.side] > 0;
   }
 
   public hurt(damage: number, message?: string) {
@@ -148,13 +133,13 @@ class Player {
     this.socket.emit("inTurn", this.inTurn);
 
     this.match.on("afterPlay", () => {
+      if (!this.match) {
+        logger.warn("The match is already over");
+        return;
+      }
+
       this.socket.emit("hitPoints", this.match?.hitPoints);
       this.socket.emit("inTurn", this.inTurn);
-
-      if (this.resolveGameState() === false) {
-        this.socket.emit("gameOver", "lose");
-        this.socket.broadcast.to(this.match!.id).emit("gameOver", "win");
-      }
     });
 
     if (this.opponent) {
@@ -173,27 +158,28 @@ class Player {
   public leaveMatch() {
     logger.info("User is leaving match", { user: this.id, name: this.name });
 
-    // Get the opponent's id before we levae the game
-    let opponentId;
+    const matchId = this.match?.id;
 
-    const opposingSide = Number(!this.side) as Side;
-
-    if (opposingSide !== undefined) {
-      opponentId = this.match?.players[opposingSide]?.socket.id;
-    }
-
-    if (this.match && this.side !== undefined) {
+    if (matchId && this.match && this.side !== undefined) {
       // Remove self from match
       this.match.players[this.side] = null;
 
       // Return to queue
-      this.socket.leave(this.match.id);
+      this.socket.leave(matchId);
       this.socket.join("queue");
 
       this.match = null;
     }
 
-    return opponentId;
+    return matchId;
+  }
+
+  win() {
+    this.socket.emit("gameOver", "win");
+  }
+
+  lose() {
+    this.socket.emit("gameOver", "lose");
   }
 
   toString() {

@@ -8,6 +8,7 @@ type HitPoints = { [side in Side]: number };
 
 class Match {
   private events: { [key: string]: Function[] } = {};
+  private timer?: NodeJS.Timeout;
 
   public id: string = uuidv4();
   public side: Side = Side.Left;
@@ -41,13 +42,31 @@ class Match {
 
   endTurn() {
     this.side = this.opposingSide;
+
+    // Add new timer
+    this.timer = setTimeout(() => {
+      logger.info("TIMER RAN OUT", { timer: this.timer });
+      this.pass();
+    }, 5000);
   }
 
   get topCard() {
     return this.stack[this.stack.length - 1];
   }
 
+  pass() {
+    logger.info("Cleared timeout", { timer: this.timer });
+
+    this.dealDamage(0, "Timeout!");
+
+    this.endTurn();
+
+    this.trigger("afterPlay", this.isGameOver);
+  }
+
   play(card: CardType) {
+    clearTimeout(this.timer);
+
     const [damage, endTurn, message] = resolveDamage(card, this.topCard);
 
     logger.info("Match:play", { damage, endTurn, message });
@@ -63,7 +82,15 @@ class Match {
       this.endTurn();
     }
 
-    this.trigger("afterPlay");
+    this.trigger("afterPlay", this.isGameOver);
+
+    if (this.isGameOver) {
+      this.gameOver();
+    }
+  }
+
+  get isGameOver() {
+    return this.hitPoints[Side.Left] <= 0 || this.hitPoints[Side.Right] <= 0;
   }
 
   private trigger(event: string, ...params: any[]) {
@@ -84,7 +111,11 @@ class Match {
       }
     }
   }
+
   leave(socketId: string) {
+    // Clear the timer if the player leaves
+    clearTimeout(this.timer);
+
     (Object.keys(this.players) as unknown as [Side]).forEach((side) => {
       const player = this.players[side as unknown as Side];
       if (player && player.socket.id == socketId) {
@@ -92,6 +123,24 @@ class Match {
         this.players[side] = null;
       }
     });
+  }
+
+  get winner(): Side {
+    if (this.hitPoints[Side.Left] > this.hitPoints[Side.Right]) {
+      return Side.Left;
+    }
+    return Side.Right;
+  }
+
+  get loser(): Side {
+    return Number(!this.winner);
+  }
+
+  gameOver() {
+    clearTimeout(this.timer);
+
+    this.players[this.winner]?.win();
+    this.players[this.loser]?.lose();
   }
 }
 
