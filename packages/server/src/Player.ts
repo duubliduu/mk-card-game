@@ -3,9 +3,10 @@ import { CardType, Side } from "./types";
 import generateDeck from "./utils/generateDeck";
 import Match from "./Match";
 import logger from "./utils/logger";
+import AISocket from "./AISocket";
 
 class Player {
-  socket: Socket;
+  socket: Socket | AISocket;
   name?: string;
   match: Match | null = null;
   deck: CardType[] = [];
@@ -16,10 +17,11 @@ class Player {
   ];
   side?: Side;
 
-  constructor(socket: Socket) {
+  constructor(socket: Socket | AISocket) {
     this.socket = socket;
 
-    socket.on("play", (index: number) => {
+    // Play emit from client
+    this.socket.on("play", (index: number) => {
       if (!this.match) {
         socket.emit(
           "message",
@@ -59,6 +61,11 @@ class Player {
   }
 
   get inTurn() {
+    logger.info("get inTurn", {
+      matchId: this.match?.id,
+      side: this.side,
+      matchSide: this.match?.side,
+    });
     return this.match && this.side === this.match.side;
   }
 
@@ -110,7 +117,9 @@ class Player {
     }
   }
 
-  public joinMatch(match: Match, onGameOver: Function) {
+  public joinMatch(match: Match) {
+    this.match = match;
+
     // generate random deck for the player
     this.deck = generateDeck();
 
@@ -119,23 +128,24 @@ class Player {
 
     this.socket.emit("hand", this.hand);
 
-    this.match = match;
-
-    const side = this.match.setSide(this);
+    // Add player to match
+    const side = this.match.join(this);
 
     if (side === undefined) {
       return false;
     }
-
     // Set side
     this.side = side;
-
-    // Push the current stack to player
-    this.socket.emit("stack", this.match.stack);
+    logger.info(`Player named ${this.name} has assigned to side ${Side[side]}`);
 
     // Join the room
     this.socket.leave("queue");
     this.socket.join(this.match.id);
+
+    // Push the current stack to player
+    this.socket.emit("stack", this.match.stack);
+    this.socket.emit("side", this.side);
+    this.socket.emit("inTurn", this.inTurn);
 
     this.match.on("afterPlay", () => {
       this.socket.emit("hitPoints", this.match?.hitPoints);
@@ -147,35 +157,35 @@ class Player {
       }
     });
 
-    this.socket.emit("side", this.side);
-    this.socket.emit("inTurn", this.inTurn);
-
     if (this.opponent) {
+      logger.info(`The match ${match.id} has opponent ${this.opponent.name}`, {
+        user: this.id,
+        opponent: this.opponent.id,
+      });
       // Emit your name to opponent
       const { id, name } = this.opponent || {};
+
       this.socket.emit("opponent", { id, name });
       this.socket.to(id).emit("opponent", { id: this.id, name: this.name });
     }
   }
 
   public leaveMatch() {
+    logger.info("User is leaving match", { user: this.id, name: this.name });
+
     // Get the opponent's id before we levae the game
     let opponentId;
-    const opposingSide = Number(!this.side) as Side;
 
-    logger.info("Resolving sides", { mySide: this.side, opposingSide });
+    const opposingSide = Number(!this.side) as Side;
 
     if (opposingSide !== undefined) {
       opponentId = this.match?.players[opposingSide]?.socket.id;
-      logger.info("Match has someone else in it with id", {
-        id: this.socket.id,
-        opponentId,
-      });
     }
 
     if (this.match && this.side !== undefined) {
       // Remove self from match
       this.match.players[this.side] = null;
+
       // Return to queue
       this.socket.leave(this.match.id);
       this.socket.join("queue");

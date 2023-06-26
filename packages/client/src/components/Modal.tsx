@@ -25,7 +25,7 @@ const Modal: FunctionComponent<PropsWithChildren> = ({ children }) => {
   };
 
   return (
-    <div className="w-full h-full absolute top-0 left-0 backdrop-blur-md flex justify-center items-center z-10">
+    <div className="w-full h-full absolute top-0 left-0 backdrop-blur-md flex justify-center items-center z-10 p-4">
       <div
         ref={ref}
         className="bg-white w-full max-w-sm h-60 p-2 rounded drop-shadow-xl relative"

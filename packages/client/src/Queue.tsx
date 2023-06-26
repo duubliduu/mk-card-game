@@ -6,6 +6,7 @@ import React, {
 import { useNavigate } from "react-router-dom";
 import { QueueContext } from "./context/QueueContext";
 import useSocket from "./hooks/useSocket";
+import Challenge from "./components/Challenge";
 
 const Queue: FunctionComponent = () => {
   const { id, queue, challenges, name, setName } = useContext(QueueContext);
@@ -62,21 +63,16 @@ const Queue: FunctionComponent = () => {
       </header>
       <section>
         <div>
+          <Challenge
+            by={"Practice against the AI"}
+            onAccept={() => handleAccept("AI")}
+          />
           {Object.entries(challenges).map(([key, { by, matchId }]) => (
-            <div
-              className="flex justify-between items-center rounded p-2 mb-1 text-xls border-dashed border-2 border-red-700"
+            <Challenge
               key={key}
-            >
-              <span className="text-red-700 font-bold">
-                <pre>{by}</pre>
-              </span>
-              <button
-                onClick={() => handleAccept(matchId)}
-                className="bg-red-700 rounded font-bold text-white p-2"
-              >
-                Join
-              </button>
-            </div>
+              by={by}
+              onAccept={() => handleAccept(matchId)}
+            />
           ))}
         </div>
       </section>

@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { CardType, Side } from "./types";
 import { resolveDamage } from "./utils/resolveDamage";
 import Player from "./Player";
+import logger from "./utils/logger";
 
 type HitPoints = { [side in Side]: number };
 
@@ -48,8 +49,13 @@ class Match {
 
   play(card: CardType) {
     const [damage, endTurn, message] = resolveDamage(card, this.topCard);
+
+    logger.info("Match:play", { damage, endTurn, message });
+
     // replace the top card
     this.stack = [...this.stack, card];
+
+    logger.info("Match:play", { card });
 
     this.dealDamage(damage, message);
 
@@ -70,6 +76,14 @@ class Match {
     this.events[event] = [...(this.events[event] || []), callback];
   }
 
+  join(player: Player): Side | undefined {
+    for (let side: Side = 0; side < 2; side++) {
+      if (!this.players[side]) {
+        this.players[side] = player;
+        return side;
+      }
+    }
+  }
   leave(socketId: string) {
     (Object.keys(this.players) as unknown as [Side]).forEach((side) => {
       const player = this.players[side as unknown as Side];
@@ -78,15 +92,6 @@ class Match {
         this.players[side] = null;
       }
     });
-  }
-
-  setSide(player: Player): Side | undefined {
-    for (let side: Side = 0; side < 2; side++) {
-      if (!this.players[side]) {
-        this.players[side] = player;
-        return side;
-      }
-    }
   }
 }
 

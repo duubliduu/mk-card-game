@@ -1,8 +1,9 @@
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import Match from "./Match";
 import Player from "./Player";
 import logger from "./utils/logger";
+import AISocket from "./AISocket";
 
 const httpServer = createServer();
 
@@ -26,6 +27,29 @@ const getOtherPlayers = (socketId: string) => {
   return Object.entries(players)
     .map(([id, player]) => [id, player.name])
     .filter(([id]) => id === socketId);
+};
+
+const createPracticeMatch = (socket: Socket) => {
+  logger.info("User started match against the AI");
+
+  // Create new AI instance
+  const aiSocket = new AISocket(socket);
+
+  // Create AI player
+  const player = new Player(aiSocket);
+
+  // name the player
+  player.name = "AI";
+
+  // save AI player to memory
+  players[aiSocket.id] = player;
+
+  // Create a match for this
+  const match = new Match();
+
+  player.joinMatch(match);
+
+  return match;
 };
 
 io.on("connection", (socket) => {
@@ -76,19 +100,19 @@ io.on("connection", (socket) => {
 
   // Enter the match
   socket.on("match", (matchId: string) => {
-    const match = matches[matchId];
+    const match =
+      matchId === "AI" ? createPracticeMatch(socket) : matches[matchId];
 
-    const challengeKey = `${socket.id}-${matchId}`;
     // Delete the challenge
+    const challengeKey = `${socket.id}-${matchId}`;
     delete challenges[challengeKey];
+    socket.emit("challenges", {});
 
     logger.info("User enter the match", {
       user: socket.id,
-      matchId,
+      matchId: match.id,
       challengeKey,
     });
-
-    socket.emit("challenges", {});
 
     if (!match) {
       logger.info("User tried to join a match no longer available", {
@@ -100,10 +124,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    players[socket.id].joinMatch(match, () => {
-      delete matches[matchId];
-      socket.emit("gameOver");
-    });
+    players[socket.id].joinMatch(match);
 
     if (!!players[socket.id].opponent) {
       // Notify one entering a match in progress
