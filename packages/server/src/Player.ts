@@ -49,7 +49,7 @@ class Player {
       this.match.play(cardToPlay);
 
       // the played card goes to everybody
-      socket.nsp.to(this.match.id).emit("play", cardToPlay);
+      socket.nsp.to(this.match.id).emit("play", this.side, cardToPlay);
 
       // hand goes just to you
       socket.emit("hand", this.hand);
@@ -136,9 +136,10 @@ class Player {
     this.socket.emit("side", this.side);
     this.socket.emit("inTurn", this.inTurn);
 
-    this.match.on("afterPlay", () => {
+    this.match.on("afterPlay", (isGameOver: boolean, match: Match | null) => {
       if (!this.match) {
         logger.warn("The match is already over");
+        match = null;
         return;
       }
 

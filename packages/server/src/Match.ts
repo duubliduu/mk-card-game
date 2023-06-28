@@ -20,7 +20,10 @@ class Match {
     [Side.Left]: null,
     [Side.Right]: null,
   };
-  public stack: CardType[] = [];
+  public stack: { [side in Side]: CardType[] } = {
+    [Side.Left]: [],
+    [Side.Right]: [],
+  };
 
   get isReady(): boolean {
     return !!this.players[Side.Left] && !!this.players[Side.Right];
@@ -31,10 +34,19 @@ class Match {
   }
 
   dealDamage(damage: number, message?: string) {
-    if (this.hitPoints[this.opposingSide] < damage) {
-      this.hitPoints[this.opposingSide] = 0;
+    // Negative damage hurts you
+    if (damage < 0) {
+      if (this.hitPoints[this.side] < damage) {
+        this.hitPoints[this.side] = 0;
+      } else {
+        this.hitPoints[this.side] += damage;
+      }
     } else {
-      this.hitPoints[this.opposingSide] -= damage;
+      if (this.hitPoints[this.opposingSide] < damage) {
+        this.hitPoints[this.opposingSide] = 0;
+      } else {
+        this.hitPoints[this.opposingSide] -= damage;
+      }
     }
 
     this.players[this.opposingSide]?.hurt(damage, message);
@@ -47,11 +59,13 @@ class Match {
     this.timer = setTimeout(() => {
       logger.info("TIMER RAN OUT", { timer: this.timer });
       this.pass();
-    }, 5000);
+    }, 10000);
   }
 
   get topCard() {
-    return this.stack[this.stack.length - 1];
+    const stack = this.stack[this.opposingSide];
+    const lastIndex = stack.length - 1;
+    return stack[lastIndex];
   }
 
   pass() {
@@ -62,7 +76,7 @@ class Match {
 
     this.endTurn();
 
-    this.trigger("afterPlay", this.isGameOver);
+    this.trigger("afterPlay", this.isGameOver, this);
   }
 
   play(card: CardType) {
@@ -73,7 +87,7 @@ class Match {
     logger.info("Match:play", { damage, endTurn, message });
 
     // replace the top card
-    this.stack = [...this.stack, card];
+    this.stack[this.side].push(card);
 
     logger.info("Match:play", { card });
 
@@ -83,7 +97,7 @@ class Match {
       this.endTurn();
     }
 
-    this.trigger("afterPlay", this.isGameOver);
+    this.trigger("afterPlay", this.isGameOver, this);
 
     if (this.isGameOver) {
       this.gameOver();

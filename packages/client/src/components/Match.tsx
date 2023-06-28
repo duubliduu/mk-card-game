@@ -12,7 +12,10 @@ function Match() {
   const { setContent, setOpen } = useContext(ModalContext);
 
   const [opposingSide, setOpposingSide] = useState<Side>(Side.Right);
-  const [stack, setStack] = useState<CardType[]>([]);
+  const [stacks, setStacks] = useState<{ [side in Side]: CardType[] }>({
+    [Side.Left]: [],
+    [Side.Right]: [],
+  });
   const [hand, setHand] = useState<
     [CardType | null, CardType | null, CardType | null]
   >([null, null, null]);
@@ -32,10 +35,13 @@ function Match() {
   useSocket({
     message: (message: string) => console.log("message", message),
     hand: setHand,
-    play: (card: CardType) => {
-      setStack((state) => [...state, card]);
+    play: (side: Side, card: CardType) => {
+      setStacks((state) => ({
+        ...state,
+        [side]: [...state[side], card],
+      }));
     },
-    stack: setStack,
+    stack: setStacks,
     inTurn: setIntTurn,
     hitPoints: setHitPoints,
     pop: (payload) =>
@@ -101,17 +107,6 @@ function Match() {
     emit("play", index);
   };
 
-  const handleSendChallenge = () => {
-    if (typeof navigator.share !== "function") {
-      return; // The share method works only with SSL
-    }
-    return navigator.share({
-      url: window.location.href,
-      text: "Take me on in CARD-FIGHTER-GAME!",
-      title: "CHALLENGE | Combat Cards",
-    });
-  };
-
   const handleExit = () => {
     emit("leave", matchId);
     navigate("/");
@@ -128,12 +123,13 @@ function Match() {
     setOpposingSide(Number(!side));
   }, [side]);
 
+  const { [Side.Left]: leftStack, [Side.Right]: rightStack } = stacks;
+
   return (
     <div className="bg-gray-100 h-screen">
       <div className="container mx-auto py-4 px-4">
         <div className="pb-4 flex justify-between">
           <button onClick={handleExit}>Exit</button>
-          <button onClick={handleSendChallenge}>Send a CHALLENGE</button>
         </div>
         <section className="flex justify-between flex-row">
           <div className="w-1/2 relative">
@@ -175,36 +171,51 @@ function Match() {
           </div>
         </section>
         <div className="py-4">
-          <section className="relative h-60 flex justify-center items-center">
+          <section className="">
             {hasEnded && <div>The match has ended</div>}
             {isReady === undefined && (
               <div>Waiting for opponent to join...</div>
             )}
             {isReady === false && <div>Opponent left</div>}
-            {isReady &&
-              !hasEnded &&
-              stack.map((card, index) => (
-                <div
-                  key={index}
-                  className="absolute"
-                  style={{ bottom: 10 + index }}
-                >
-                  <Card {...card} />
+            {isReady && !hasEnded && (
+              <div className="h-60 flex justify-around">
+                <div className="relative flex justify-center items-center">
+                  {leftStack.map((card, index) => (
+                    <div
+                      key={index}
+                      className="absolute"
+                      style={{ bottom: 10 + index }}
+                    >
+                      <Card {...card} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            {pops.map((item, index) => (
-              <Pop
-                key={index}
-                sfx={isNaN(item as unknown as number) ? "whiff" : "hit"}
-              >
-                <div
-                  className="font-bold align-center"
-                  style={{ fontSize: "10vw" }}
-                >
-                  {item}
+                <div className="relative flex justify-center items-center">
+                  {rightStack.map((card, index) => (
+                    <div
+                      key={index}
+                      className="absolute"
+                      style={{ bottom: 10 + index }}
+                    >
+                      <Card {...card} />
+                    </div>
+                  ))}
                 </div>
-              </Pop>
-            ))}
+                {pops.map((item, index) => (
+                  <Pop
+                    key={index}
+                    sfx={isNaN(item as unknown as number) ? "whiff" : "hit"}
+                  >
+                    <div
+                      className="font-bold align-center"
+                      style={{ fontSize: "10vw" }}
+                    >
+                      {item}
+                    </div>
+                  </Pop>
+                ))}
+              </div>
+            )}
           </section>
         </div>
         <section
