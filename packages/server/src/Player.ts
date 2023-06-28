@@ -85,6 +85,10 @@ class Player {
     return this.match.players[this.opposingSide];
   }
 
+  get inMatch(): boolean {
+    return !!this.match;
+  }
+
   draw(...indexes: number[]) {
     indexes.forEach((index) => {
       const [card] = this.deck.splice(0, 1);

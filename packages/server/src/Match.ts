@@ -55,6 +55,7 @@ class Match {
   }
 
   pass() {
+    clearTimeout(this.timer);
     logger.info("Cleared timeout", { timer: this.timer });
 
     this.dealDamage(0, "Timeout!");

@@ -8,7 +8,6 @@ import AIClient from "./AIClient";
 const httpServer = createServer();
 
 const io = new Server(httpServer, {
-  cookie: true,
   cors: {
     origin: "*",
   },
@@ -21,15 +20,6 @@ type Challenge = {
 
 const players: Record<string, Player> = {};
 const matches: Record<string, Match> = {};
-const challenges: { [id: string]: Challenge } = {};
-
-const clients: { [id: string]: AIClient } = {};
-
-const getOtherPlayers = (socketId: string) => {
-  return Object.entries(players)
-    .map(([id, player]) => [id, player.name])
-    .filter(([id]) => id === socketId);
-};
 
 const createPracticeMatch = () => {
   logger.info("User started match against the AI");
@@ -38,8 +28,6 @@ const createPracticeMatch = () => {
   const match = new Match();
 
   const aiClient = new AIClient();
-
-  clients[aiClient.id] = aiClient;
 
   matches[match.id] = match;
 
@@ -57,17 +45,23 @@ io.on("connection", (socket) => {
   // Identify the user for them
   socket.emit("id", socket.id);
 
-  // Send list of players to the connected user
+  // Send list of players in queue to
   socket.emit(
     "queue",
-    Object.entries(players).map(([id, player]) => [id, player.name])
+    Object.values(players).map(({ id, name, inMatch }) => ({
+      id,
+      name,
+      inMatch,
+    }))
   );
+
+  // Sen the connected user to others
+  socket.broadcast
+    .to("queue")
+    .emit("add", { id: socket.id, name: "", inMatch: false });
 
   // Add new user to list
   players[socket.id] = new Player(socket);
-
-  // Everyone else gets the new list
-  socket.broadcast.to("queue").emit("queue", getOtherPlayers(socket.id));
 
   // User challenges someone
   socket.on("challenge", (opponentId) => {
@@ -79,16 +73,11 @@ io.on("connection", (socket) => {
     // save the match
     matches[match.id] = match;
 
-    const challenge: Challenge = {
-      by: players[socket.id].name || socket.id,
-      matchId: match.id,
-    };
-    const challengeKey: string = `${opponentId}-${match.id}`;
-
-    challenges[challengeKey] = challenge;
-
     // send the match to opponent
-    socket.to(opponentId).emit("challenges", { [challengeKey]: challenge });
+    socket.to(opponentId).emit("challenge", {
+      name: players[socket.id].name || socket.id,
+      matchId: match.id,
+    });
 
     // send the match to self
     socket.emit("startMatch", match.id);
@@ -97,18 +86,6 @@ io.on("connection", (socket) => {
   // Enter the match
   socket.on("match", (matchId: string) => {
     const match = matchId === "AI" ? createPracticeMatch() : matches[matchId];
-
-    // Delete the challenge
-    const challengeKey = `${socket.id}-${matchId}`;
-    delete challenges[challengeKey];
-
-    socket.emit("challenges", {});
-
-    logger.info("User entered a match", {
-      user: socket.id,
-      matchId: match.id,
-      challengeKey,
-    });
 
     if (!match) {
       logger.info("User tried to join a match no longer available", {
@@ -120,7 +97,14 @@ io.on("connection", (socket) => {
       return;
     }
 
+    logger.info("User entered a match", {
+      user: socket.id,
+      matchId: match.id,
+    });
+
     players[socket.id].joinMatch(match);
+    const { id, name, inMatch } = players[socket.id];
+    socket.broadcast.to("queue").emit("update", { id, name, inMatch });
 
     if (!!players[socket.id].opponent) {
       // Notify one entering a match in progress
@@ -133,7 +117,7 @@ io.on("connection", (socket) => {
   socket.on("name", (name: string) => {
     logger.info("User changed name", { name, user: socket.id });
     players[socket.id].name = name;
-    socket.broadcast.to("queue").emit("queue", getOtherPlayers(socket.id));
+    socket.broadcast.to("queue").emit("update", [socket.id, name]);
   });
 
   // Leaving match will be seen as a forfeit
@@ -142,12 +126,18 @@ io.on("connection", (socket) => {
     const opponentId = players[socket.id].opponent?.id;
     const matchId = players[socket.id].leaveMatch();
 
+    const { id, name, inMatch } = players[socket.id];
+
+    socket.broadcast.to("queue").emit("update", { id, name, inMatch });
+
     logger.info("User left the match", { id: socket.id, matchId });
 
     if (opponentId) {
       // Notify the opponent of my leaving
-      socket.to(opponentId).emit("leave");
+      socket.to(opponentId).emit("leave", matchId);
       logger.info("Say bye bye!", { opponentId, matchId });
+    } else {
+      socket.broadcast.to("queue").emit("leave", matchId);
     }
 
     if (matchId) {
@@ -165,8 +155,7 @@ io.on("connection", (socket) => {
     if (player && player.match) {
       const matchId = player.match.id;
 
-      socket.nsp.to(matchId).emit("leave");
-
+      socket.broadcast.to(matchId).emit("leave");
       // Leave the match if any
       player.leaveMatch();
 
@@ -186,9 +175,8 @@ io.on("connection", (socket) => {
 
     // Remove player from memory
     delete players[socket.id];
-
-    // You're out, everyone gets the update list
-    socket.broadcast.to("queue").emit("queue", getOtherPlayers(socket.id));
+    // Remove the player from the list
+    socket.broadcast.to("queue").emit("remove", socket.id);
   });
 });
 

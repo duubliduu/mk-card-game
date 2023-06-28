@@ -176,7 +176,6 @@ function Match() {
         </section>
         <div className="py-4">
           <section className="relative h-60 flex justify-center items-center">
-
             {hasEnded && <div>The match has ended</div>}
             {isReady === undefined && (
               <div>Waiting for opponent to join...</div>

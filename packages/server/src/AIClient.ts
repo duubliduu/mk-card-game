@@ -1,25 +1,31 @@
 import logger from "./utils/logger";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
+import { type } from "os";
 
 class AIClient {
-  public id: string = uuidv4();
-
   socket: Socket;
   isMyTurn: boolean = false;
-
   hasEnded: boolean = false;
 
+  private handleReady?: (socket: Socket) => void;
+
   constructor() {
-    this.socket = io("ws://localhost:8080");
-
-    this.socket.on("connect", () => {});
-    this.socket.on("disconnect", () => {
-      logger.warn("Client connection lost");
-    });
-
     logger.info("AIClient created");
 
+    this.socket = io("ws://localhost:8080");
+
+    this.socket.on("connect", () => {
+      if (typeof this.handleReady === "function") {
+        this.handleReady(this.socket);
+      }
+    });
+
+    this.socket.on("disconnect", () => {
+      logger.info("AI disconnected");
+    });
+
+    // Update IA name
     this.socket.emit("name", "AI boi");
 
     this.socket.on("gameOver", () => {
@@ -27,6 +33,18 @@ class AIClient {
       logger.info("AI gameOver was called");
       this.hasEnded = true;
       this.socket.emit("leave");
+
+      // Manually disconnect
+      this.socket.disconnect();
+    });
+
+    this.socket.on("leave", () => {
+      logger.info("Player left the AI match");
+
+      this.hasEnded = true;
+
+      // Manually disconnect
+      this.socket.disconnect();
     });
 
     this.socket.on("inTurn", (inTurn: boolean) => {
@@ -60,10 +78,23 @@ class AIClient {
       // Emit to backend
       this.socket.emit("play", randomCardIndex);
     });
+
+    this.socket.on("challenge", (payload: { [matchId: string]: string }) => {
+      logger.info("AI received a challenge!");
+      this.socket.emit("match", payload.matchId);
+    });
+  }
+
+  get id() {
+    return this.socket.id;
   }
 
   get randomCardIndex() {
     return Math.ceil(Math.random() * 3) - 1;
+  }
+
+  onReady(callback: (socket?: Socket) => void) {
+    this.handleReady = callback;
   }
 }
 

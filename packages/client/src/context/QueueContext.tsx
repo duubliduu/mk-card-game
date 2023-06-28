@@ -8,9 +8,11 @@ import {
 import useSocket from "../hooks/useSocket";
 import { useDebounce } from "usehooks-ts";
 
+type QueueItem = { id: string; name: string; inMatch: boolean };
+
 type QueueContextType = {
-  queue: [string, string][];
-  challenges: { [key: string]: { by: string; matchId: string } };
+  queue: QueueItem[];
+  challenges: { [matchId: string]: string };
   id?: string;
   name?: string;
   setName: (name: string) => void;
@@ -20,8 +22,9 @@ const defaultValues = {
   queue: [],
   challenges: {},
   name: undefined,
-  setName: () => {},
+  setName: () => {}, // IDE doesn't understand this method is actually in use. Don't remove
 };
+
 export const QueueContext = createContext<QueueContextType>(defaultValues);
 
 const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
@@ -41,14 +44,38 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
   const emit = useSocket({
     id: setId,
     queue: setQueue,
-    challenges: setChallenges,
+    add: (payload: QueueItem) => {
+      setQueue((state) => [...state, payload]);
+    },
+    remove: (payload: string) => {
+      setQueue((state) => state.filter(({ id }) => id !== payload));
+    },
+    update: (payload: QueueItem) => {
+      setQueue((state) =>
+        state.map((item) => (item.id === payload.id ? payload : item))
+      );
+    },
+    challenge: (payload: { matchId: string; name: string }) => {
+      setChallenges((state) => ({
+        ...state,
+        [payload.matchId]: payload.name,
+      }));
+    },
+    leave: (matchId: string) => {
+      setChallenges((state) => {
+        // Remove the challenge from the list
+        const { [matchId]: _, ...rest } = state;
+        return {
+          ...rest,
+        };
+      });
+    },
   });
 
-  const debouncedValue = useDebounce<string | undefined>(name, 1000);
+  const debouncedValue = useDebounce<string | undefined>(name, 500);
 
   useEffect(() => {
     if (debouncedValue !== undefined) {
-      console.log("debounced", debouncedValue);
       emit("name", debouncedValue);
     }
   }, [emit, debouncedValue]);

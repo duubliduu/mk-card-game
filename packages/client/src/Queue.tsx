@@ -44,10 +44,13 @@ const Queue: FunctionComponent = () => {
 
   return (
     <div className="container px-4 py-4 max-w-content">
-      <header className="pb-2">
+      <header className="pb-2 flex justify-between">
         <h1 className="font-bold text-2xl pb-2 text-red-700">
           Combat Cards POC
         </h1>
+        <pre>{id}</pre>
+      </header>
+      <section>
         <div className="h-16 w-full">
           <label className="relative flex flex-col">
             <span className="abolute text-xs p-2">Change name</span>
@@ -60,17 +63,17 @@ const Queue: FunctionComponent = () => {
             />
           </label>
         </div>
-      </header>
+      </section>
       <section>
         <div>
           <Challenge
-            by={"Practice against the AI"}
+            name={"Practice against the AI"}
             onAccept={() => handleAccept("AI")}
           />
-          {Object.entries(challenges).map(([key, { by, matchId }]) => (
+          {Object.entries(challenges).map(([matchId, name]) => (
             <Challenge
-              key={key}
-              by={by}
+              key={matchId}
+              name={name}
               onAccept={() => handleAccept(matchId)}
             />
           ))}
@@ -94,28 +97,23 @@ const Queue: FunctionComponent = () => {
               <p className="mb-4">There's no one in the queue :(</p>
             </div>
           )}
-          {queue.map(([itemId, itemName]) => (
+          {queue.map((item) => (
             <div
               className="flex justify-between items-center pb-1 mb-1 border-dashed border-b-2 border-inherit"
-              key={itemId}
+              key={item.id}
             >
-              <div className={`${itemId === id ? "italic" : ""}`}>
+              <div>
                 <pre className="text-sm">
-                  [{itemId}] {itemName || <em>Ano</em>}
+                  [{item.id}] {item.name || <em>Anon</em>}
                 </pre>
               </div>
               <div>
-                {itemId === id ? (
-                  <button
-                    disabled
-                    className="rounded bg-slate-400 p-2 text-white text-sm font-bold"
-                  >
-                    Challenge
-                  </button>
+                {item.inMatch ? (
+                  <div className="p-2 text-sm rounded">In a Match</div>
                 ) : (
                   <button
                     className="rounded bg-red-700 p-2 text-white text-sm font-bold"
-                    onClick={() => handleChallenge(itemId)}
+                    onClick={() => handleChallenge(item.id)}
                   >
                     Challenge
                   </button>
