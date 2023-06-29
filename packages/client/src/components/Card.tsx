@@ -1,8 +1,9 @@
 import { FunctionComponent } from "react";
-import { CardType, Guard, Pressure, Reach, Stance, Weight } from "../types";
+import { CardType, Pressure, Reach, Stance, Weight } from "../types";
 
 type CardProps = {
   onClick?: () => void;
+  flip?: boolean;
 } & CardType;
 
 const Card: FunctionComponent<CardProps> = ({
@@ -10,7 +11,7 @@ const Card: FunctionComponent<CardProps> = ({
   reach,
   weight,
   pressure,
-  guard,
+  flip = false,
   onClick,
 }) => (
   <article
@@ -21,15 +22,16 @@ const Card: FunctionComponent<CardProps> = ({
     {...(onClick && { onClick })}
   >
     <div className="text-center rounded border-2 h-full flex flex-col justify-between p-2">
-      <div>
-        <em>{Pressure[pressure]}</em>
-      </div>
-      <div>
-        {Guard[guard]} {Reach[reach]}
-      </div>
-      <div>
-        {Weight[weight]} {Stance[stance]}
-      </div>
+      {pressure === Pressure.Defensive && (
+        <img alt={""} src={`/images/cards/defending.png`} className="absolute" />
+      )}
+      <img
+        className={`${flip && "transform -scale-x-100"}`}
+        alt={""}
+        src={`/images/cards/${Stance[stance].toLowerCase()}/${Weight[
+          weight
+        ].toLowerCase()}/${Reach[reach].toLowerCase()}.jpg`}
+      />
     </div>
   </article>
 );

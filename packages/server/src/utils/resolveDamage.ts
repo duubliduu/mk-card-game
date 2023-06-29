@@ -1,7 +1,14 @@
-import { CardType, Guard, Pressure, Stance } from "../types";
+import { CardType, Pressure, Reach, Stance } from "../types";
+
+const damageReachMap = {
+  [Reach.Grapple]: 15,
+  [Reach.Punch]: 5,
+  [Reach.Kick]: 10,
+  [Reach.FireBall]: 5,
+};
 
 const calculateDamage = (attacker: CardType, defender: CardType) => {
-  const baseDamage = attacker.weight * 5 + attacker.pressure * 5;
+  const baseDamage = damageReachMap[attacker.reach] * (attacker.weight / 2);
 
   if (defender.pressure === Pressure.Defensive) {
     return Math.ceil(baseDamage / 5);
@@ -37,8 +44,8 @@ export const resolveDamage = (
     }
 
     if (
-      (attacker.guard === Guard.Air && defender.stance < Stance.Mid) ||
-      (attacker.guard === Guard.Crouch && attacker.stance > Stance.Mid)
+      (attacker.stance === Stance.Air && defender.stance < Stance.Mid) ||
+      (attacker.stance === Stance.Low && attacker.stance > Stance.Mid)
     ) {
       // you whiff again
       return [0, true, "Counter Whiffs"];
@@ -62,8 +69,8 @@ export const resolveDamage = (
   // hi doesn't hit crouch
   // low doesn't hit air
   if (
-    (defender.guard === Guard.Air && attacker.stance < Stance.Mid) ||
-    (defender.guard === Guard.Crouch && attacker.stance > Stance.Mid)
+    (defender.stance === Stance.Air && attacker.stance < Stance.Mid) ||
+    (defender.stance === Stance.Low && attacker.stance > Stance.Mid)
   ) {
     // you whiff again
     return [0, true, "Whiff!"];

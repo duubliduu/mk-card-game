@@ -197,7 +197,7 @@ function Match() {
                       className="absolute"
                       style={{ bottom: 10 + index }}
                     >
-                      <Card {...card} />
+                      <Card {...card} flip />
                     </div>
                   ))}
                 </div>
