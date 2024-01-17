@@ -1,4 +1,4 @@
-import { CardType, Pressure, Reach, Stance } from "../types";
+import { CardType, Pressure, Reach, Stance, Weight } from "../types";
 
 const damageReachMap = {
   [Reach.Grapple]: 15,
@@ -7,90 +7,111 @@ const damageReachMap = {
   [Reach.FireBall]: 5,
 };
 
-const calculateDamage = (attacker: CardType, defender: CardType) => {
-  const baseDamage = damageReachMap[attacker.reach] * (attacker.weight / 2);
+const calculateDamage = (attacker: CardType) => {
+  return damageReachMap[attacker.reach] * attacker.weight;
+};
 
-  if (defender.pressure === Pressure.Defensive) {
-    return Math.ceil(baseDamage / 5);
-  }
+const isDefending = (card: CardType) => {
+  return card.pressure === Pressure.Defensive;
+};
 
-  return baseDamage;
+const isAttacking = (card: CardType) => {
+  return card.pressure === Pressure.Aggressive;
+};
+
+const isParry = (leftCArd: CardType, rightCard: CardType) => {
+  return (
+    leftCArd.reach === rightCard.reach && leftCArd.stance === rightCard.stance
+  );
+};
+
+const isJumping = (card: CardType) => {
+  return card.stance === Stance.Air;
+};
+
+const isCrouching = (card: CardType) => {
+  return card.stance === Stance.Low;
+};
+
+const isHigh = (card: CardType) => {
+  return card.stance === Stance.High;
+};
+
+const doesWhiff = (
+  attackingCard: CardType,
+  defendingCard: CardType
+): boolean => {
+  return (
+    (isJumping(attackingCard) && isCrouching(defendingCard)) ||
+    (isHigh(attackingCard) && isCrouching(defendingCard)) ||
+    (isCrouching(attackingCard) && isJumping(defendingCard))
+  );
+};
+
+const isLight = (card: CardType) => {
+  return card.weight === Weight.Light;
+};
+
+const isHeavy = (card: CardType) => {
+  return card.weight === Weight.Heavy;
+};
+
+const inReach = (attackingCard: CardType, defendingCard: CardType) => {
+  return attackingCard.reach >= defendingCard.reach;
 };
 
 // -1 they get the turn OR they get to go again
 // 0 turn ends
 // +1 you get the turn OR you get to go again
+/**
+ * returns [damage, endTurn, message]
+ */
 export const resolveDamage = (
-  attacker: CardType,
-  defender: CardType
+  attackingCard: CardType,
+  defendingCard: CardType
 ): [number, boolean, string?] => {
-  // Set trap
-  if (attacker.pressure === Pressure.Defensive) {
-    return [0, true, "Defending"];
-  }
-
   // If there's no defending card
-  if (!defender) {
+  if (!defendingCard) {
     return [0, true, "Starter Card"];
   }
 
-  // Trap card triggered
-  if (
-    attacker.pressure === Pressure.Aggressive &&
-    defender.pressure === Pressure.Defensive
-  ) {
-    if (defender.reach < attacker.reach) {
-      return [0, true, "Short Counter"];
-    }
-
-    if (
-      (attacker.stance === Stance.Air && defender.stance < Stance.Mid) ||
-      (attacker.stance === Stance.Low && attacker.stance > Stance.Mid)
-    ) {
-      // you whiff again
-      return [0, true, "Counter Whiffs"];
-    }
-
-    if (defender.weight > attacker.weight) {
-      return [0, true, "Slow Counter"];
-    }
-
-    return [-calculateDamage(defender, attacker), true, "Counter!"];
+  // Setup trap card
+  if (isDefending(attackingCard)) {
+    return [0, true, "Defending"];
   }
 
-  // you don't reach
-  if (attacker.reach < defender.reach) {
-    // return recovery time based on
-    // negative damage means whiff
-    return [0, true, "Short!"];
+  // Both Defending
+  if (isDefending(attackingCard) && isDefending(defendingCard)) {
+    return [0, true, "Impasse"];
   }
 
-  // Mid hit every one
-  // hi doesn't hit crouch
-  // low doesn't hit air
-  if (
-    (defender.stance === Stance.Air && attacker.stance < Stance.Mid) ||
-    (defender.stance === Stance.Low && attacker.stance > Stance.Mid)
-  ) {
-    // you whiff again
+  // Trigger trap card
+  if (isAttacking(attackingCard) && isDefending(defendingCard)) {
+    if (isParry(attackingCard, defendingCard)) {
+      return [-calculateDamage(defendingCard), true, "Parry!"];
+    }
+
+    if (doesWhiff(attackingCard, defendingCard)) {
+      return [0, false, "Block!"];
+    }
+
+    return [-calculateDamage(defendingCard), true, "Counter!"];
+  }
+
+  if (doesWhiff(attackingCard, defendingCard)) {
     return [0, true, "Whiff!"];
   }
 
-  // If both are defensive no damage
-  if (attacker.pressure + defender.pressure === -2) {
-    return [0, true, "Both Defending!"];
-  }
-
-  if (attacker.weight > defender.weight) {
-    return [0, true, "Slow!"];
+  if (!inReach(attackingCard, defendingCard)) {
+    return [0, true, "Short!"];
   }
 
   // It's a hit
   // damage is depending on the weight
-  // weight defines the start and recovery
+  // defines the start and recovery
   return [
-    calculateDamage(attacker, defender),
-    attacker.pressure + defender.pressure < 0 || // if either one is defending
-      attacker.weight === 3, // Heavy attack ends the turn
+    calculateDamage(attackingCard),
+    // Heavy attack stops the turn
+    isHeavy(attackingCard),
   ];
 };
