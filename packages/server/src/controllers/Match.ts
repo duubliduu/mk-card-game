@@ -1,8 +1,8 @@
 import { v4 as uuidv4 } from "uuid";
-import { CardType, Side } from "./types";
-import { resolveDamage } from "./utils/resolveDamage";
+import { CardType, Side } from "../types";
+import { resolveDamage } from "../utils/resolveDamage";
 import Player from "./Player";
-import logger from "./utils/logger";
+import logger from "../utils/logger";
 
 type HitPoints = { [side in Side]: number };
 
@@ -122,6 +122,7 @@ class Match {
     for (let side: Side = 0; side < 2; side++) {
       if (!this.players[side]) {
         this.players[side] = player;
+        logger.info("Player joined the match", { side, match: this.id });
         return side;
       }
     }

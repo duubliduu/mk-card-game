@@ -1,8 +1,9 @@
 import { Socket } from "socket.io";
-import { CardType, Side } from "./types";
-import generateDeck from "./utils/generateDeck";
+import { CardType, Side } from "../types";
+import generateDeck from "../utils/generateDeck";
 import Match from "./Match";
-import logger from "./utils/logger";
+import logger from "../utils/logger";
+import * as handlers from "../handlers/playerHandlers";
 
 class Player {
   socket: Socket;
@@ -15,47 +16,15 @@ class Player {
     null,
   ];
   side?: Side;
-
   constructor(socket: Socket) {
     this.socket = socket;
 
-    // Play emit from client
-    this.socket.on("play", (index: number) => {
-      if (!this.match) {
-        socket.emit(
-          "message",
-          "Cannot play a card, because you're not in a match"
-        );
-        return;
-      }
+    // send side to everyone
+    this.socket.emit("side", this.side);
 
-      if (!this.inTurn) {
-        socket.emit("message", "Wait for your turn!");
-        return;
-      }
-
-      const cardToPlay = this.hand[index];
-
-      delete this.hand[index];
-
-      this.draw(index);
-
-      if (cardToPlay === null) {
-        socket.emit("message", "You don't have card at that index");
-        return;
-      }
-
-      // Play the card
-      this.match.play(cardToPlay);
-
-      // the played card goes to everybody
-      socket.nsp.to(this.match.id).emit("play", this.side, cardToPlay);
-
-      // hand goes just to you
-      socket.emit("hand", this.hand);
-
-      // send side to everyone
-      socket.emit("side", this.side);
+    // Register listeners
+    this.socket.on("play", (cardIndex: number) => {
+      handlers.onPlay(this, cardIndex);
     });
   }
 
@@ -89,7 +58,7 @@ class Player {
     return !!this.match;
   }
 
-  draw(...indexes: number[]) {
+  drawFromDeck(...indexes: number[]) {
     indexes.forEach((index) => {
       const [card] = this.deck.splice(0, 1);
       this.hand[index] = card;
@@ -109,11 +78,9 @@ class Player {
   public joinMatch(match: Match) {
     this.match = match;
 
-    // generate random deck for the player
     this.deck = generateDeck();
 
-    // Draw three
-    this.draw(0, 1, 2);
+    this.drawFromDeck(0, 1, 2);
 
     this.socket.emit("hand", this.hand);
 
@@ -125,7 +92,10 @@ class Player {
     }
     // Set side
     this.side = side;
-    logger.info(`Player named ${this.name} has assigned to side ${Side[side]}`);
+    logger.info(`Player assigned to a side`, {
+      user: this.id,
+      side: Side[side],
+    });
 
     // Join the room
     this.socket.leave("queue");

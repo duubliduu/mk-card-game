@@ -1,6 +1,6 @@
-import logger from "./utils/logger";
+import logger from "../utils/logger";
 import { io, Socket } from "socket.io-client";
-import * as handlers from "./handlers";
+import * as handlers from "../handlers/aiHandlers";
 
 class AIClient {
   socket: Socket;

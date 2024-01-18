@@ -1,6 +1,6 @@
-import AIClient from "./AIClient";
-import logger from "./utils/logger";
-import { randomCardIndex } from "./utils/general";
+import AIClient from "../controllers/AIClient";
+import logger from "../utils/logger";
+import { randomCardIndex } from "../utils/general";
 
 export function onChallenge(
   client: AIClient,
@@ -55,7 +55,8 @@ export function onLeave(client: AIClient) {
 
 export function onGameOver(client: AIClient) {
   // Leave the game on game over
-  logger.info("AI gameOver was called");
+  logger.info("AI game over was called");
+
   client.hasEnded = true;
   client.socket.emit("leave");
 
