@@ -4,9 +4,9 @@ import generateDeck from "../utils/generateDeck";
 import Match from "./Match";
 import logger from "../utils/logger";
 import * as handlers from "../handlers/playerHandlers";
+import Controller from "./controller";
 
-class Player {
-  socket: Socket;
+class Player extends Controller {
   name?: string;
   match: Match | null = null;
   deck: CardType[] = [];
@@ -16,16 +16,15 @@ class Player {
     null,
   ];
   side?: Side;
+
   constructor(socket: Socket) {
-    this.socket = socket;
+    super();
 
-    // send side to everyone
-    this.socket.emit("side", this.side);
+    this.connect(socket);
 
-    // Register listeners
-    this.socket.on("play", (cardIndex: number) => {
-      handlers.onPlay(this, cardIndex);
-    });
+    this.emit("side", this.side);
+
+    this.registerHandlers(handlers);
   }
 
   get inTurn() {
@@ -39,8 +38,8 @@ class Player {
     return this.match.hitPoints[this.side];
   }
 
-  get id(): string {
-    return this.socket.id;
+  get id(): string | undefined {
+    return this.socket?.id;
   }
 
   get opposingSide(): Side {
@@ -67,22 +66,17 @@ class Player {
 
   public hurt(damage: number, message?: string) {
     if (this.match !== null) {
-      if (damage) {
-        this.socket.nsp.to(this.match.id).emit("pop", damage);
-      } else if (message) {
-        this.socket.nsp.to(this.match.id).emit("pop", message);
-      }
+      this.toNamespace(this.match.id, "pop", { damage, message });
     }
   }
 
   public joinMatch(match: Match) {
     this.match = match;
-
     this.deck = generateDeck();
 
     this.drawFromDeck(0, 1, 2);
 
-    this.socket.emit("hand", this.hand);
+    this.emit("hand", this.hand);
 
     // Add player to match
     const side = this.match.join(this);
@@ -90,6 +84,7 @@ class Player {
     if (side === undefined) {
       return false;
     }
+
     // Set side
     this.side = side;
     logger.info(`Player assigned to a side`, {
@@ -98,63 +93,34 @@ class Player {
     });
 
     // Join the room
-    this.socket.leave("queue");
-    this.socket.join(this.match.id);
+    this.leave("queue");
+    this.join(this.match.id);
 
     // Push the current stack to player
-    this.socket.emit("stack", this.match.stack);
-    this.socket.emit("side", this.side);
-    this.socket.emit("inTurn", this.inTurn);
+    this.emit("stack", this.match.stack);
+    this.emit("side", this.side);
+    this.emit("inTurn", this.inTurn);
 
-    this.match.on("afterPlay", (isGameOver: boolean, match: Match | null) => {
-      if (!this.match) {
-        logger.warn("The match is already over");
-        match = null;
-        return;
-      }
-
-      this.socket.emit("hitPoints", this.match?.hitPoints);
-      this.socket.emit("inTurn", this.inTurn);
+    this.match.on("afterPlay", () => {
+      handlers.afterPlay(this);
     });
 
-    if (this.opponent) {
+    if (this.opponent && this.opponent.id) {
       logger.info(`The match ${match.id} has opponent ${this.opponent.name}`, {
         user: this.id,
         opponent: this.opponent.id,
       });
-      // Emit your name to opponent
-      const { id, name } = this.opponent || {};
-
-      this.socket.emit("opponent", { id, name });
-      this.socket.to(id).emit("opponent", { id: this.id, name: this.name });
+      this.emit("opponent", { id: this.opponent.id, name: this.opponent.name });
+      this.to(this.opponent.id, "opponent", { id: this.id, name: this.name });
     }
-  }
-
-  public leaveMatch() {
-    logger.info("User is leaving match", { user: this.id, name: this.name });
-
-    const matchId = this.match?.id;
-
-    if (matchId && this.match && this.side !== undefined) {
-      // Remove self from match
-      this.match.players[this.side] = null;
-
-      // Return to queue
-      this.socket.leave(matchId);
-      this.socket.join("queue");
-
-      this.match = null;
-    }
-
-    return matchId;
   }
 
   win() {
-    this.socket.emit("gameOver", "win");
+    this.emit("gameOver", "win");
   }
 
   lose() {
-    this.socket.emit("gameOver", "lose");
+    this.emit("gameOver", "lose");
   }
 
   toString() {

@@ -1,4 +1,13 @@
 import Player from "../controllers/Player";
+import Match from "../controllers/Match";
+import logger from "../utils/logger";
+
+export function afterPlay(player: Player) {
+  if (player.match) {
+    player.socket.emit("hitPoints", player.match.hitPoints);
+    player.socket.emit("inTurn", player.inTurn);
+  }
+}
 
 export const onPlay = (player: Player, cardIndex: number) => {
   if (!player.match) {

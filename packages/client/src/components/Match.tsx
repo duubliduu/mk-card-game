@@ -25,7 +25,7 @@ function Match() {
     [Side.Right]: 100,
   });
   const [side, setSide] = useState<Side>(Side.Left);
-  const [pops, setPops] = useState<string[]>([]);
+  const [pops, setPops] = useState<{ damage: number; message: string }[]>([]);
   const [isReady, setIsReady] = useState<boolean | undefined>();
   const [opponent, setOpponent] = useState<
     Partial<{ id: string; name: string }>
@@ -201,16 +201,19 @@ function Match() {
                     </div>
                   ))}
                 </div>
-                {pops.map((item, index) => (
-                  <Pop
-                    key={index}
-                    sfx={isNaN(item as unknown as number) ? "whiff" : "hit"}
-                  >
+                {pops.map(({ damage, message }, index) => (
+                  <Pop key={index} sfx={damage > 0 ? "hit" : "whiff"}>
                     <div
                       className="font-bold align-center"
                       style={{ fontSize: "10vw" }}
                     >
-                      {item}
+                      {damage}
+                    </div>
+                    <div
+                      className="font-bold align-center"
+                      style={{ fontSize: "10vw" }}
+                    >
+                      {message}
                     </div>
                   </Pop>
                 ))}

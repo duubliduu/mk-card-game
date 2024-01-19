@@ -33,6 +33,27 @@ class Match {
     return Number(!this.side);
   }
 
+  get winner(): Side {
+    if (this.hitPoints[Side.Left] > this.hitPoints[Side.Right]) {
+      return Side.Left;
+    }
+    return Side.Right;
+  }
+
+  get loser(): Side {
+    return Number(!this.winner);
+  }
+
+  get isGameOver() {
+    return this.hitPoints[Side.Left] <= 0 || this.hitPoints[Side.Right] <= 0;
+  }
+
+  get topCard() {
+    const stack = this.stack[this.opposingSide];
+    const lastIndex = stack.length - 1;
+    return stack[lastIndex];
+  }
+
   dealDamage(damage: number, message?: string) {
     // Negative damage hurts you
     if (damage < 0) {
@@ -60,12 +81,6 @@ class Match {
       logger.info("TIMER RAN OUT", { timer: this.timer });
       this.pass();
     }, 10000);
-  }
-
-  get topCard() {
-    const stack = this.stack[this.opposingSide];
-    const lastIndex = stack.length - 1;
-    return stack[lastIndex];
   }
 
   pass() {
@@ -104,10 +119,6 @@ class Match {
     }
   }
 
-  get isGameOver() {
-    return this.hitPoints[Side.Left] <= 0 || this.hitPoints[Side.Right] <= 0;
-  }
-
   private trigger(event: string, ...params: any[]) {
     this.events[event].forEach((callback) => {
       callback(...params);
@@ -139,17 +150,6 @@ class Match {
         this.players[side] = null;
       }
     });
-  }
-
-  get winner(): Side {
-    if (this.hitPoints[Side.Left] > this.hitPoints[Side.Right]) {
-      return Side.Left;
-    }
-    return Side.Right;
-  }
-
-  get loser(): Side {
-    return Number(!this.winner);
   }
 
   gameOver() {

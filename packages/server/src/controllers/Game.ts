@@ -2,17 +2,17 @@ import { Socket } from "socket.io";
 import logger from "../utils/logger";
 import Player from "./Player";
 import Match from "./Match";
-import * as handlers from "../handlers/connectionHandlers";
+import * as handlers from "../handlers/gameHandlers";
 import AIClient from "./AIClient";
 import { Side } from "../types";
+import Controller from "./controller";
 
-export class Game {
+export class Game extends Controller {
   players: Record<string, Player> = {};
   matches: Record<string, Match> = {};
-  socket: Socket | null = null;
 
-  connect(socket: Socket) {
-    this.socket = socket;
+  start(socket: Socket) {
+    this.connect(socket);
 
     logger.info("User connected", { user: socket.id });
 
@@ -33,34 +33,16 @@ export class Game {
     );
 
     // Send the connected user to others
-    socket.broadcast
-      .to("queue")
-      .emit("add", { id: socket.id, name: "", inMatch: false });
+    this.broadcastTo("queue", "add", {
+      id: socket.id,
+      name: "",
+      inMatch: false,
+    });
 
     // Add new user to list
     this.players[socket.id] = new Player(socket);
 
-    // User challenges someone
-    socket.on("challenge", (opponentId) => {
-      handlers.onChallenge(this, opponentId);
-    });
-
-    // Enter the match
-    socket.on("match", (matchId: string) => {
-      handlers.onMatch(this, matchId);
-    });
-
-    socket.on("name", (name: string) => {
-      handlers.onName(this, name);
-    });
-
-    socket.on("leave", () => {
-      handlers.onLeave(this);
-    });
-
-    socket.on("disconnect", () => {
-      handlers.onDisconnect(this);
-    });
+    this.registerHandlers(handlers);
   }
   get id() {
     return this.socket?.id;

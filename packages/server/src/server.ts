@@ -13,7 +13,7 @@ const io = new Server(httpServer, {
 const connections = [];
 
 io.on("connection", (socket) => {
-  Connection.connect(socket);
+  Connection.start(socket);
 });
 
 io.listen(8080);

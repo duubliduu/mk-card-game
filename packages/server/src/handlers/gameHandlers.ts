@@ -1,7 +1,7 @@
 import { Game } from "../controllers/Game";
 import logger from "../utils/logger";
 
-export function onDisconnect(game: Game) {
+export function disconnect(game: Game) {
   if (game.match && game.player) {
     game.broadcastTo(game.match.id, "leave");
 
@@ -13,7 +13,7 @@ export function onDisconnect(game: Game) {
   game.broadcastTo("queue", "remove", game.id);
 }
 
-export function onLeave(game: Game) {
+export function leave(game: Game) {
   const matchId = game.match?.id;
 
   game.endMatch();
@@ -28,7 +28,7 @@ export function onLeave(game: Game) {
   });
 }
 
-export function onName(game: Game, name: string) {
+export function name(game: Game, name: string) {
   logger.info("onName", { name, user: game.id });
   if (game.player) {
     game.player.name = name;
@@ -36,7 +36,7 @@ export function onName(game: Game, name: string) {
   game.broadcastTo("queue", "update", [game.id, name]);
 }
 
-export function onMatch(game: Game, matchId: string) {
+export function match(game: Game, matchId: string) {
   const match =
     matchId === "AI" ? game.startPracticeMatch() : game.matches[matchId];
 
@@ -69,7 +69,7 @@ export function onMatch(game: Game, matchId: string) {
   game.broadcastTo(matchId, "enter", match.isReady);
 }
 
-export const onChallenge = (game: Game, opponentId: string) => {
+export const challenge = (game: Game, opponentId: string) => {
   logger.info("Challenge event", { id: game.id, opponentId });
 
   // Create a match
