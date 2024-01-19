@@ -134,8 +134,8 @@ class Match {
 
     (Object.keys(this.players) as unknown as [Side]).forEach((side) => {
       const player = this.players[side as unknown as Side];
-      if (player && player.socket.id == socketId) {
-        // Remove the player from the game
+      if (player) {
+        // Remove the player from the match
         this.players[side] = null;
       }
     });

@@ -67,11 +67,7 @@ class Player {
 
   public hurt(damage: number, message?: string) {
     if (this.match !== null) {
-      if (damage) {
-        this.socket.nsp.to(this.match.id).emit("pop", damage);
-      } else if (message) {
-        this.socket.nsp.to(this.match.id).emit("pop", message);
-      }
+      this.socket.nsp.to(this.match.id).emit("pop", { damage, message });
     }
   }
 
@@ -128,25 +124,6 @@ class Player {
       this.socket.emit("opponent", { id, name });
       this.socket.to(id).emit("opponent", { id: this.id, name: this.name });
     }
-  }
-
-  public leaveMatch() {
-    logger.info("User is leaving match", { user: this.id, name: this.name });
-
-    const matchId = this.match?.id;
-
-    if (matchId && this.match && this.side !== undefined) {
-      // Remove self from match
-      this.match.players[this.side] = null;
-
-      // Return to queue
-      this.socket.leave(matchId);
-      this.socket.join("queue");
-
-      this.match = null;
-    }
-
-    return matchId;
   }
 
   win() {

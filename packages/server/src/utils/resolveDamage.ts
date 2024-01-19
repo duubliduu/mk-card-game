@@ -56,6 +56,10 @@ const isHeavy = (card: CardType) => {
   return card.weight === Weight.Heavy;
 };
 
+const isStanding = (card: CardType) => {
+  return card.stance === Stance.Mid || card.stance === Stance.High;
+};
+
 const inReach = (attackingCard: CardType, defendingCard: CardType) => {
   return attackingCard.reach >= defendingCard.reach;
 };

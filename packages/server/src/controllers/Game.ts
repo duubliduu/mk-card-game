@@ -134,8 +134,9 @@ export class Game {
     if (this.match) {
       this.match.players[Side.Left] = null;
       this.broadcastTo("queue", "leave", this.match.id);
-      logger.info("You left the match!", {
+      logger.info("User left the match!", {
         matchId: this.match.id,
+        user: this.id,
       });
     }
   }
