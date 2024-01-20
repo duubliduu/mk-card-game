@@ -73,49 +73,62 @@ const inReach = (attackingCard: CardType, defendingCard: CardType) => {
 export const resolveDamage = (
   attackingCard: CardType,
   defendingCard: CardType
-): [number, boolean, string?] => {
+): { damage: number; endTurn: boolean; message: string } => {
+  const defaults = { damage: 0, endTurn: true, message: "" };
   // If there's no defending card
   if (!defendingCard) {
-    return [0, true, "Starter Card"];
+    return { ...defaults, message: "Starter Card" };
   }
 
   // Setup trap card
   if (isDefending(attackingCard)) {
-    return [0, true, "Defending"];
+    return { ...defaults, message: "Guard!" };
   }
 
   // Both Defending
   if (isDefending(attackingCard) && isDefending(defendingCard)) {
-    return [0, true, "Impasse"];
+    return { ...defaults, message: "Impasse" };
   }
 
   // Trigger trap card
   if (isAttacking(attackingCard) && isDefending(defendingCard)) {
     if (isParry(attackingCard, defendingCard)) {
-      return [-calculateDamage(defendingCard), true, "Parry!"];
+      return {
+        ...defaults,
+        damage: -calculateDamage(defendingCard),
+        message: "Parry!",
+      };
     }
 
-    if (doesWhiff(attackingCard, defendingCard)) {
-      return [0, false, "Block!"];
+    if (
+      doesWhiff(defendingCard, attackingCard) ||
+      !inReach(defendingCard, attackingCard)
+    ) {
+      return { ...defaults, endTurn: false, message: "Block!" };
     }
 
-    return [-calculateDamage(defendingCard), true, "Counter!"];
+    return {
+      ...defaults,
+      damage: -calculateDamage(defendingCard),
+      message: "Counter!",
+    };
   }
 
   if (doesWhiff(attackingCard, defendingCard)) {
-    return [0, true, "Whiff!"];
+    return { ...defaults, message: "Whiff!" };
   }
 
   if (!inReach(attackingCard, defendingCard)) {
-    return [0, true, "Short!"];
+    return { ...defaults, message: "Short!" };
   }
 
   // It's a hit
   // damage is depending on the weight
   // defines the start and recovery
-  return [
-    calculateDamage(attackingCard),
+  return {
+    damage: calculateDamage(attackingCard),
     // Heavy attack stops the turn
-    isHeavy(attackingCard),
-  ];
+    endTurn: isHeavy(attackingCard),
+    message: `${Weight[attackingCard.weight]} hit!`,
+  };
 };
