@@ -2,12 +2,15 @@ export enum Stance {
   Low,
   Mid,
   High,
-  air,
+  Air,
 }
 
 export enum Reach {
+  None,
+  Guard,
   Grapple,
   Punch,
+  Knee,
   Kick,
   FireBall,
 }
@@ -18,20 +21,15 @@ export enum Weight {
   Heavy,
 }
 
-export enum Pressure {
-  Defensive = -1,
-  Controlled,
-  Aggressive,
-}
-
 export enum Side {
   Left,
   Right,
 }
 
 export type CardType = {
+  image: string;
+  move?: number;
   stance: Stance;
   reach: Reach;
   weight: Weight;
-  pressure: Pressure;
 };

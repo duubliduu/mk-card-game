@@ -1,22 +1,30 @@
-import { CardType, Pressure, Reach, Stance, Weight } from "../types";
+import { CardType, Reach, Stance, Weight } from "../types";
 
-const damageReachMap = {
-  [Reach.Grapple]: 15,
+type DamageReachMap = {
+  [key in Exclude<Reach, Reach.None | Reach.Guard | Reach.Grapple>]: number;
+};
+
+const damageReachMap: DamageReachMap = {
   [Reach.Punch]: 5,
+  [Reach.Knee]: 10,
   [Reach.Kick]: 10,
-  [Reach.FireBall]: 5,
+  [Reach.FireBall]: 10,
 };
 
 const calculateDamage = (attacker: CardType) => {
-  return damageReachMap[attacker.reach] * attacker.weight;
+  if (attacker.reach in damageReachMap) {
+    // @ts-ignore
+    return damageReachMap[attacker.reach] * attacker.weight;
+  }
+  return 0;
 };
 
 const isDefending = (card: CardType) => {
-  return card.pressure === Pressure.Defensive;
+  return card.reach === Reach.Guard;
 };
 
-const isAttacking = (card: CardType) => {
-  return card.pressure === Pressure.Aggressive;
+const isAttacking = (card: CardType): boolean => {
+  return card.reach > Reach.Guard;
 };
 
 const isParry = (leftCArd: CardType, rightCard: CardType) => {

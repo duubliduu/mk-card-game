@@ -1,31 +1,46 @@
 import { Socket } from "socket.io";
-import { CardType, Side } from "../types";
-import generateDeck from "../utils/generateDeck";
+import { CardType, Room, Side } from "../types";
 import Match from "./Match";
 import logger from "../utils/logger";
 import * as handlers from "../handlers/playerHandlers";
+import SocketController from "./SocketController";
+import Deck from "./Deck";
 
-class Player {
-  socket: Socket;
+class Player extends SocketController {
   name?: string;
   match: Match | null = null;
-  deck: CardType[] = [];
+  deck: Deck;
   hand: [CardType | null, CardType | null, CardType | null] = [
     null,
     null,
     null,
   ];
   side?: Side;
+
+  createMatch: (opponentId: string) => Match = () => new Match();
+  handleDisconnect: () => void = () => {};
+  joinMatch: (matchId: string) => void = () => {};
+
   constructor(socket: Socket) {
-    this.socket = socket;
+    super(socket);
 
-    // send side to everyone
-    this.socket.emit("side", this.side);
+    logger.info("Player connected", { playerId: this.id });
 
-    // Register listeners
-    this.socket.on("play", (cardIndex: number) => {
-      handlers.onPlay(this, cardIndex);
+    this.emit("connected", socket.id);
+
+    // Send the connected user to others
+    this.broadcastTo(Room.QUEUE, "add", {
+      id: socket.id,
+      name: "",
+      inMatch: false,
     });
+
+    this.joinRoom(Room.QUEUE);
+
+    // TODO: Fetch cards from database
+    this.deck = new Deck();
+
+    this.registerListeners(handlers);
   }
 
   get inTurn() {
@@ -58,86 +73,31 @@ class Player {
     return !!this.match;
   }
 
-  drawFromDeck(...indexes: number[]) {
-    indexes.forEach((index) => {
-      const [card] = this.deck.splice(0, 1);
-      this.hand[index] = card;
-    });
-  }
-
   public hurt(damage: number, message?: string) {
-    if (this.match !== null) {
-      this.socket.nsp.to(this.match.id).emit("pop", { damage, message });
-    }
-  }
-
-  public joinMatch(match: Match) {
-    this.match = match;
-
-    this.deck = generateDeck();
-
-    this.drawFromDeck(0, 1, 2);
-
-    this.socket.emit("hand", this.hand);
-
-    // Add player to match
-    const side = this.match.join(this);
-
-    if (side === undefined) {
-      return false;
-    }
-    // Set side
-    this.side = side;
-    logger.info(`Player assigned to a side`, {
-      user: this.id,
-      side: Side[side],
-    });
-
-    // Join the room
-    this.socket.leave("queue");
-    this.socket.join(this.match.id);
-
-    // Push the current stack to player
-    this.socket.emit("stack", this.match.stack);
-    this.socket.emit("side", this.side);
-    this.socket.emit("inTurn", this.inTurn);
-
-    this.match.on("afterPlay", (isGameOver: boolean, match: Match | null) => {
-      if (!this.match) {
-        logger.warn("The match is already over");
-        match = null;
-        return;
-      }
-
-      this.socket.emit("hitPoints", this.match?.hitPoints);
-      this.socket.emit("inTurn", this.inTurn);
-    });
-
-    if (this.opponent) {
-      logger.info(`The match ${match.id} has opponent ${this.opponent.name}`, {
-        user: this.id,
-        opponent: this.opponent.id,
-      });
-      // Emit your name to opponent
-      const { id, name } = this.opponent || {};
-
-      this.socket.emit("opponent", { id, name });
-      this.socket.to(id).emit("opponent", { id: this.id, name: this.name });
-    }
+    if (this.match) this.toNamespace(this.match.id, "pop", { damage, message });
   }
 
   win() {
-    this.socket.emit("gameOver", "win");
+    this.emit("gameOver", "win");
   }
 
   lose() {
-    this.socket.emit("gameOver", "lose");
+    this.emit("gameOver", "lose");
   }
 
   toString() {
     const { socket, ...rest } = this;
 
     return JSON.stringify(rest);
+  }
+
+  fromHand(cardIndex: number): CardType {
+    const cardToPlay = this.hand[cardIndex] as CardType;
+    const [newCard] = this.deck.draw(1);
+
+    this.hand[cardIndex] = newCard;
+
+    return cardToPlay;
   }
 }
 

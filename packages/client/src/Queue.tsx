@@ -19,7 +19,7 @@ const Queue: FunctionComponent = () => {
 
   const navigate = useNavigate();
 
-  const handleChallenge = (id: string) => {
+  const handleSendChallenge = (id: string) => {
     emit("challenge", id);
   };
 
@@ -113,9 +113,9 @@ const Queue: FunctionComponent = () => {
                 ) : (
                   <button
                     className="rounded bg-red-700 p-2 text-white text-sm font-bold"
-                    onClick={() => handleChallenge(item.id)}
+                    onClick={() => handleSendChallenge(item.id)}
                   >
-                    Challenge
+                    Send a challenge
                   </button>
                 )}
               </div>

@@ -3,6 +3,7 @@ import { CardType, Side } from "../types";
 import { resolveDamage } from "../utils/resolveDamage";
 import Player from "./Player";
 import logger from "../utils/logger";
+import * as playerHandlers from "../handlers/playerHandlers";
 
 type HitPoints = { [side in Side]: number };
 
@@ -54,12 +55,6 @@ class Match {
 
   endTurn() {
     this.side = this.opposingSide;
-
-    // Add new timer
-    this.timer = setTimeout(() => {
-      logger.info("TIMER RAN OUT", { timer: this.timer });
-      this.pass();
-    }, 10000);
   }
 
   get topCard() {
@@ -69,7 +64,6 @@ class Match {
   }
 
   pass() {
-    clearTimeout(this.timer);
     logger.info("Cleared timeout", { timer: this.timer });
 
     this.dealDamage(0, "Timeout!");
@@ -80,16 +74,10 @@ class Match {
   }
 
   play(card: CardType) {
-    clearTimeout(this.timer);
-
-    const [damage, endTurn, message] = resolveDamage(card, this.topCard);
-
-    logger.info("Match:play", { damage, endTurn, message });
+    const { damage, endTurn, message } = resolveDamage(card, this.topCard);
 
     // replace the top card
     this.stack[this.side].push(card);
-
-    logger.info("Match:play", { card });
 
     this.dealDamage(damage, message);
 
@@ -97,7 +85,7 @@ class Match {
       this.endTurn();
     }
 
-    this.trigger("afterPlay", this.isGameOver, this);
+    this.trigger("afterPlay", this.isGameOver);
 
     if (this.isGameOver) {
       this.gameOver();
@@ -108,14 +96,10 @@ class Match {
     return this.hitPoints[Side.Left] <= 0 || this.hitPoints[Side.Right] <= 0;
   }
 
-  private trigger(event: string, ...params: any[]) {
-    this.events[event].forEach((callback) => {
-      callback(...params);
-    });
-  }
-
-  on(event: string, callback: Function) {
-    this.events[event] = [...(this.events[event] || []), callback];
+  private trigger(event: keyof typeof playerHandlers, ...args: any[]) {
+    const player = this.players[this.side];
+    // @ts-ignore
+    playerHandlers[event](player, ...args);
   }
 
   join(player: Player): Side | undefined {
@@ -157,6 +141,12 @@ class Match {
 
     this.players[this.winner]?.win();
     this.players[this.loser]?.lose();
+
+    // Reset players
+    this.players = {
+      [Side.Left]: null,
+      [Side.Right]: null,
+    };
   }
 }
 

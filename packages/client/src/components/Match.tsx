@@ -47,7 +47,7 @@ function Match() {
     pop: (payload) =>
       setPops((state) => (payload ? [...state, payload] : state)),
     side: setSide,
-    enter: setIsReady,
+    ready: setIsReady,
     leave: () => setIsReady(false),
     opponent: setOpponent,
   });
@@ -167,7 +167,7 @@ function Match() {
                 width: `${hitPoints[opposingSide]}%`,
               }}
             />
-            <div className="pt-4 text-sm">{opponent.name || opponent.name}</div>
+            <div className="pt-4 text-sm">{opponent.name || opponent.id}</div>
           </div>
         </section>
         <div className="py-4">

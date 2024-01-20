@@ -42,7 +42,7 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
   );
 
   const emit = useSocket({
-    id: setId,
+    connected: setId,
     queue: setQueue,
     add: (payload: QueueItem) => {
       setQueue((state) => [...state, payload]);
