@@ -4,11 +4,11 @@ import { resolveDamage } from "../utils/resolveDamage";
 import Player from "./Player";
 import logger from "../utils/logger";
 import * as playerHandlers from "../handlers/playerHandlers";
+import { Game } from "./Game";
 
 type HitPoints = { [side in Side]: number };
 
 class Match {
-  private events: { [key: string]: Function[] } = {};
   private timer?: NodeJS.Timeout;
 
   public id: string = uuidv4();
@@ -26,12 +26,24 @@ class Match {
     [Side.Right]: [],
   };
 
+  game: Game;
+
+  constructor(game: Game) {
+    this.game = game;
+  }
+
   get isReady(): boolean {
     return !!this.players[Side.Left] && !!this.players[Side.Right];
   }
 
   get opposingSide(): Side {
     return Number(!this.side);
+  }
+
+  get hasPlayers(): boolean {
+    return (
+      this.players[Side.Left] !== null && this.players[Side.Right] !== null
+    );
   }
 
   dealDamage(damage: number, message?: string) {
@@ -112,17 +124,13 @@ class Match {
     }
   }
 
-  leave(socketId: string) {
-    // Clear the timer if the player leaves
-    clearTimeout(this.timer);
+  leave(side: Side) {
+    this.players[side] = null;
 
-    (Object.keys(this.players) as unknown as [Side]).forEach((side) => {
-      const player = this.players[side as unknown as Side];
-      if (player) {
-        // Remove the player from the match
-        this.players[side] = null;
-      }
-    });
+    if (!this.hasPlayers) {
+      this.game.removeMatch(this.id);
+      logger.info("Match removed", { matchId: this.id });
+    }
   }
 
   get winner(): Side {
@@ -137,12 +145,13 @@ class Match {
   }
 
   gameOver() {
-    clearTimeout(this.timer);
-
     this.players[this.winner]?.win();
     this.players[this.loser]?.lose();
 
-    // Reset players
+    this.resetPlayers();
+  }
+
+  resetPlayers() {
     this.players = {
       [Side.Left]: null,
       [Side.Right]: null,

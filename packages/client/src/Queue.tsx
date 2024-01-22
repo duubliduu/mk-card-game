@@ -20,7 +20,7 @@ const Queue: FunctionComponent = () => {
   const navigate = useNavigate();
 
   const handleSendChallenge = (id: string) => {
-    emit("challenge", id);
+    emit("sendChallenge", id);
   };
 
   const handleAccept = (matchId: string) => {

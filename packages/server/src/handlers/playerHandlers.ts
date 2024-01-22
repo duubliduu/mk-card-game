@@ -1,13 +1,13 @@
 import Player from "../controllers/Player";
 import logger from "../utils/logger";
-import { Room } from "../types";
+import { CardType, Room } from "../types";
 
 export const play = (player: Player, cardIndex: number) => {
   if (!player.match) {
     return;
   }
 
-  const cardToPlay = player.fromHand(cardIndex);
+  const cardToPlay = player.findCardByIndex(cardIndex);
 
   player.match.play(cardToPlay);
 
@@ -18,18 +18,16 @@ export const play = (player: Player, cardIndex: number) => {
   player.emit("hand", player.hand);
 };
 
-// export function leave(player: Player) {
-//   const matchId = player.match?.id;
-//
-//   const { id, name, inMatch } = player.player ?? {};
-//
-//   player.broadcastTo("queue", "update", { id, name, inMatch });
-//
-//   logger.info("User left the match", {
-//     id: player.id,
-//     matchId,
-//   });
-// }
+export function leaveMatch(player: Player) {
+  const matchId = player.match?.id;
+
+  if (!matchId) {
+    logger.error("Player is not in a match", { playerId: player.id });
+    return;
+  }
+
+  player.handleLeaveMatch();
+}
 
 export function name(player: Player, name: string) {
   logger.info("Update name", { name, user: player.id });
@@ -37,14 +35,20 @@ export function name(player: Player, name: string) {
   player.to(Room.QUEUE, "update", { id: player.id, name: player.name });
 }
 
-export function match(player: Player, matchId: string) {
-  logger.info("Player joined a match", { matchId, playerId: player.id });
+export function joinMatch(player: Player, matchId: string) {
+  const match = player.game.findMatchById(matchId);
 
-  player.joinMatch(matchId);
+  if (!match) {
+    logger.error("Match not found", { matchId });
+    return;
+  }
 
-  player.deck.draw(3).forEach((card, index) => {
-    player.hand[index] = card;
-  });
+  player.side = match.join(player);
+  player.match = match;
+  player.hand = player.deck.draw(3) as [CardType, CardType, CardType];
+
+  player.leaveRoom(Room.QUEUE);
+  player.joinRoom(matchId);
 
   player.emit("hand", player.hand);
   player.emit("side", player.side);
@@ -56,24 +60,28 @@ export function match(player: Player, matchId: string) {
   if (player.opponent) {
     const { id, name } = player.opponent;
 
-    logger.info(`The match ${matchId} has opponent ${player.opponent.name}`, {
-      id,
-      name,
-    });
+    logger.info(
+      `The match ${matchId} has opponent ${
+        player.opponent.name || player.opponent.id
+      }`,
+      {
+        id,
+        name,
+      }
+    );
 
     player.emit("opponent", { id, name });
     player.to(id, "opponent", { id: player.id, name: player.name });
   }
+
+  logger.info("Player joined a match", { matchId, playerId: player.id });
 }
 
-export const challenge = (player: Player, opponentId: string) => {
-  logger.info("Challenge event", { playerId: player.id, opponentId });
+export const sendChallenge = (player: Player, opponentId: string) => {
+  const match = player.game.createMatch();
 
-  const match = player.createMatch(opponentId);
-
-  // send the match to opponent
   player.to(opponentId, "challenge", {
-    name: player?.name || player.id,
+    name: player.name || player.id,
     matchId: match.id,
   });
 
@@ -83,7 +91,17 @@ export const challenge = (player: Player, opponentId: string) => {
 
 export const disconnect = (player: Player) => {
   logger.info("Player disconnected", { playerId: player.id });
-  player.handleDisconnect();
+
+  if (player.match && player.side) {
+    player.match.players[player.side] = null;
+
+    if (player.match.id in player.game.matches)
+      player.game.removeMatch(player.match.id);
+  }
+
+  player.to(Room.QUEUE, "remove", player.id);
+
+  player.game.removePlayer(player.id);
 };
 
 export const afterPlay = (player: Player) => {

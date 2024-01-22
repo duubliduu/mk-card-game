@@ -5,9 +5,10 @@ import logger from "../utils/logger";
 import * as handlers from "../handlers/playerHandlers";
 import SocketController from "./SocketController";
 import Deck from "./Deck";
+import { Game } from "./Game";
 
 class Player extends SocketController {
-  name?: string;
+  game: Game;
   match: Match | null = null;
   deck: Deck;
   hand: [CardType | null, CardType | null, CardType | null] = [
@@ -16,17 +17,17 @@ class Player extends SocketController {
     null,
   ];
   side?: Side;
+  name?: string;
 
-  createMatch: (opponentId: string) => Match = () => new Match();
-  handleDisconnect: () => void = () => {};
-  joinMatch: (matchId: string) => void = () => {};
-
-  constructor(socket: Socket) {
+  constructor(socket: Socket, game: Game) {
     super(socket);
+
+    this.game = game;
 
     logger.info("Player connected", { playerId: this.id });
 
     this.emit("connected", socket.id);
+    this.emit(Room.QUEUE, this.game.connectedPlayers);
 
     // Send the connected user to others
     this.broadcastTo(Room.QUEUE, "add", {
@@ -63,7 +64,7 @@ class Player extends SocketController {
   }
 
   get opponent(): Player | null {
-    if (!this.match) {
+    if (!this.match || !this.side) {
       return null;
     }
     return this.match.players[this.opposingSide];
@@ -78,10 +79,12 @@ class Player extends SocketController {
   }
 
   win() {
+    this.handleLeaveMatch();
     this.emit("gameOver", "win");
   }
 
   lose() {
+    this.handleLeaveMatch();
     this.emit("gameOver", "lose");
   }
 
@@ -91,13 +94,42 @@ class Player extends SocketController {
     return JSON.stringify(rest);
   }
 
-  fromHand(cardIndex: number): CardType {
+  findCardByIndex(cardIndex: number): CardType {
     const cardToPlay = this.hand[cardIndex] as CardType;
     const [newCard] = this.deck.draw(1);
 
     this.hand[cardIndex] = newCard;
 
     return cardToPlay;
+  }
+
+  handleLeaveMatch() {
+    if (!this.match || !this.side) {
+      logger.error("Player is not in a match", { playerId: this.id });
+      return;
+    }
+
+    const matchId = this.match.id;
+    this.emit("leave", matchId);
+
+    this.match.leave(this.side);
+    this.match = null;
+
+    this.broadcastTo(Room.QUEUE, "update", {
+      id: this.id,
+      name: this.name,
+      inMatch: this.inMatch,
+    });
+
+    this.leaveRoom(matchId);
+    this.joinRoom(Room.QUEUE);
+
+    this.emit("leave", matchId);
+
+    logger.info("Player left the match", {
+      playerId: this.id,
+      matchId,
+    });
   }
 }
 

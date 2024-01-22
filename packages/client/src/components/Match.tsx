@@ -16,7 +16,7 @@ function Match() {
     [Side.Left]: [],
     [Side.Right]: [],
   });
-  const [hand, setHand] = useState<
+  const [cards, setCards] = useState<
     [CardType | null, CardType | null, CardType | null]
   >([null, null, null]);
   const [inTurn, setIntTurn] = useState<boolean>(false);
@@ -34,7 +34,7 @@ function Match() {
 
   useSocket({
     message: (message: string) => console.log("message", message),
-    hand: setHand,
+    hand: setCards,
     play: (side: Side, card: CardType) => {
       setStacks((state) => ({
         ...state,
@@ -65,7 +65,7 @@ function Match() {
               className="rounded bg-red-700 text-white py-3 px-6 font-bold"
               onClick={() => {
                 setOpen(false);
-                emit("leave");
+                emit("leaveMatch");
                 navigate("/");
               }}
             >
@@ -82,7 +82,7 @@ function Match() {
               className="rounded bg-red-700 text-white py-3 px-6 font-bold"
               onClick={() => {
                 setOpen(false);
-                emit("leave");
+                emit("leaveMatch");
                 navigate("/");
               }}
             >
@@ -108,13 +108,13 @@ function Match() {
   };
 
   const handleExit = () => {
-    emit("leave", matchId);
+    emit("leaveMatch");
     navigate("/");
   };
 
   useEffect(() => {
     if (matchId) {
-      emit("match", matchId);
+      emit("joinMatch", matchId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -123,7 +123,10 @@ function Match() {
     setOpposingSide(Number(!side));
   }, [side]);
 
-  const { [Side.Left]: leftStack, [Side.Right]: rightStack } = stacks;
+  const { [side]: leftStack = [], [Number(!side) as Side]: rightStack = [] } = stacks;
+
+  const leftCard = leftStack[leftStack.length - 1];
+  const rightCard = rightStack[rightStack.length - 1];
 
   return (
     <div className="bg-gray-100 h-screen">
@@ -171,35 +174,29 @@ function Match() {
           </div>
         </section>
         <div className="py-4">
-          <section className="">
+          <section>
             {hasEnded && <div>The match has ended</div>}
             {isReady === undefined && (
               <div>Waiting for opponent to join...</div>
             )}
             {isReady === false && <div>Opponent left</div>}
             {isReady && !hasEnded && (
-              <div className="h-60 flex justify-around">
-                <div className="relative flex justify-center items-center">
-                  {leftStack.map((card, index) => (
-                    <div
-                      key={index}
-                      className="absolute"
-                      style={{ bottom: 10 + index }}
-                    >
-                      <Card {...card} />
+              <div className="flex justify-center relative">
+                <div className="flex align-middle justify-center aspect-landscape">
+                  {leftCard && (
+                    <div className="aspect-portrait" style={{marginRight:"-25%"}}>
+                      <img alt="" src={`/images/cards/${leftCard.image}`} />
                     </div>
-                  ))}
-                </div>
-                <div className="relative flex justify-center items-center">
-                  {rightStack.map((card, index) => (
-                    <div
-                      key={index}
-                      className="absolute"
-                      style={{ bottom: 10 + index }}
-                    >
-                      <Card {...card} flip />
+                  )}
+                  {rightCard && (
+                    <div className="aspect-portrait"  style={{marginLeft:"-25%"}}>
+                      <img
+                        className="transform -scale-x-100"
+                        alt=""
+                        src={`/images/cards/${rightCard.image}`}
+                      />
                     </div>
-                  ))}
+                  )}
                 </div>
                 {pops.map(({ damage, message }, index) => (
                   <Pop key={index} sfx={damage === 0 ? "whiff" : "hit"}>
@@ -229,7 +226,7 @@ function Match() {
           className="flex justify-around"
           style={{ opacity: isReady && !hasEnded && inTurn ? 1 : 0.5 }}
         >
-          {hand.map((card, index) =>
+          {cards.map((card, index) =>
             card ? (
               <Card
                 onClick={() => handlePlayCard(index)}
