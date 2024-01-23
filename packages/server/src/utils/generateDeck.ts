@@ -1,4 +1,4 @@
-import { CardType, Reach, Stance, Weight } from "../types";
+import { CardType, Reach, Guard, Weight } from "../types";
 
 const reaches: Reach[] = [
   Reach.Guard,
@@ -9,14 +9,14 @@ const reaches: Reach[] = [
   Reach.FireBall,
 ];
 
-const stances: { [key in Reach]: Stance[] } = {
+const stances: { [key in Reach]: Guard[] } = {
   [Reach.None]: [],
-  [Reach.Guard]: [Stance.Mid, Stance.High],
-  [Reach.Grapple]: [Stance.Mid],
-  [Reach.Punch]: [Stance.Mid, Stance.High],
-  [Reach.Knee]: [Stance.Mid],
-  [Reach.Kick]: [Stance.Low, Stance.Mid, Stance.High, Stance.Air],
-  [Reach.FireBall]: [Stance.Low, Stance.High],
+  [Reach.Guard]: [Guard.Mid, Guard.High],
+  [Reach.Grapple]: [Guard.Mid],
+  [Reach.Punch]: [Guard.Mid, Guard.High],
+  [Reach.Knee]: [Guard.Mid],
+  [Reach.Kick]: [Guard.Low, Guard.Mid, Guard.High, Guard.Air],
+  [Reach.FireBall]: [Guard.Low, Guard.High],
 };
 
 const weights: { [key in Reach]: Weight[] } = {
@@ -39,20 +39,20 @@ export const buildDeck = () => {
       if (weights[reach].length > 0) {
         weights[reach].forEach((weight) => {
           deck.push({
-            image: `${Reach[reach].toLowerCase()}-${Stance[
+            image: `${Reach[reach].toLowerCase()}-${Guard[
               stance
             ].toLowerCase()}-${Weight[weight].toLowerCase()}.png`,
-            stance,
+            guard: stance,
             reach,
             weight,
           });
         });
       } else {
         deck.push({
-          image: `${Reach[reach].toLowerCase()}-${Stance[
+          image: `${Reach[reach].toLowerCase()}-${Guard[
             stance
           ].toLowerCase()}.png`,
-          stance,
+          guard: stance,
           reach,
           weight: 0,
         });
@@ -63,35 +63,35 @@ export const buildDeck = () => {
   // Utility cards
   deck.push({
     image: "advance.png",
-    stance: Stance.Mid,
+    guard: Guard.Mid,
     reach: Reach.None,
     weight: 0,
     move: 1,
   });
   deck.push({
     image: "evade.png",
-    stance: Stance.Mid,
+    guard: Guard.Mid,
     reach: Reach.None,
     weight: 0,
     move: -1,
   });
   deck.push({
     image: "jump-neutral.png",
-    stance: Stance.Air,
+    guard: Guard.Air,
     reach: Reach.None,
     weight: 0,
     move: 0,
   });
   deck.push({
     image: "jump-backwards.png",
-    stance: Stance.Air,
+    guard: Guard.Air,
     reach: Reach.None,
     weight: 0,
     move: -1,
   });
   deck.push({
     image: "jump-forward.png",
-    stance: Stance.Air,
+    guard: Guard.Air,
     reach: Reach.None,
     weight: 0,
     move: 1,

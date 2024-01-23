@@ -16,7 +16,7 @@ const Card: FunctionComponent<CardProps> = ({
     style={{ transform: `rotate(${Math.random() * 2 - 1}deg)` }}
     className={`rounded border-slate-500 ${
       onClick ? "cursor-pointer" : ""
-    } aspect-card p-1 bg-white drop-shadow-md`}
+    } aspect-portrait p-1 bg-white drop-shadow-md`}
     {...(onClick && { onClick })}
   >
     <div className="rounded bg-slate-200 border-2 border-slate-300 h-full flex flex-col justify-center p-2">

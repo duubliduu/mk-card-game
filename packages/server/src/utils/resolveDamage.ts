@@ -1,4 +1,4 @@
-import { CardType, Reach, Stance, Weight } from "../types";
+import { CardType, Reach, Guard, Weight } from "../types";
 
 type DamageReachMap = {
   [key in Exclude<Reach, Reach.None | Reach.Guard | Reach.Grapple>]: number;
@@ -29,20 +29,20 @@ const isAttacking = (card: CardType): boolean => {
 
 const isParry = (leftCArd: CardType, rightCard: CardType) => {
   return (
-    leftCArd.reach === rightCard.reach && leftCArd.stance === rightCard.stance
+    leftCArd.reach === rightCard.reach && leftCArd.guard === rightCard.guard
   );
 };
 
 const isJumping = (card: CardType) => {
-  return card.stance === Stance.Air;
+  return card.guard === Guard.Air;
 };
 
 const isCrouching = (card: CardType) => {
-  return card.stance === Stance.Low;
+  return card.guard === Guard.Low;
 };
 
 const isHigh = (card: CardType) => {
-  return card.stance === Stance.High;
+  return card.guard === Guard.High;
 };
 
 const doesWhiff = (
@@ -65,7 +65,7 @@ const isHeavy = (card: CardType) => {
 };
 
 const isStanding = (card: CardType) => {
-  return card.stance === Stance.Mid || card.stance === Stance.High;
+  return card.guard === Guard.Mid || card.guard === Guard.High;
 };
 
 const inReach = (attackingCard: CardType, defendingCard: CardType) => {

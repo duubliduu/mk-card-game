@@ -82,7 +82,7 @@ class Match {
 
     this.endTurn();
 
-    this.trigger("afterPlay", this.isGameOver, this);
+    this.trigger("afterPlay");
   }
 
   play(card: CardType) {
@@ -97,7 +97,7 @@ class Match {
       this.endTurn();
     }
 
-    this.trigger("afterPlay", this.isGameOver);
+    this.trigger("afterPlay");
 
     if (this.isGameOver) {
       this.gameOver();

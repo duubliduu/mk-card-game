@@ -107,4 +107,7 @@ export const disconnect = (player: Player) => {
 export const afterPlay = (player: Player) => {
   player.emit("hitPoints", player.match?.hitPoints || {});
   player.emit("inTurn", player.inTurn);
+  if (player.match) {
+    player.to(player.match.id, "inTurn", player.opponent?.inTurn);
+  }
 };

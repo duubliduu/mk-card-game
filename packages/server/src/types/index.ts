@@ -1,6 +1,6 @@
 import exp from "constants";
 
-export enum Stance {
+export enum Guard {
   Low,
   Mid,
   High,
@@ -31,7 +31,7 @@ export enum Side {
 export type CardType = {
   image: string;
   move?: number;
-  stance: Stance;
+  guard: Guard;
   reach: Reach;
   weight: Weight;
 };

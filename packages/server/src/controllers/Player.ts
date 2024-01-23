@@ -6,11 +6,16 @@ import * as handlers from "../handlers/playerHandlers";
 import SocketController from "./SocketController";
 import Deck from "./Deck";
 import { Game } from "./Game";
+import { Attributes } from "../types/player";
+import { generateAttributes } from "../utils/generateCharacteristics";
 
 class Player extends SocketController {
   game: Game;
   match: Match | null = null;
-  deck: Deck;
+  // TODO: Fetch cards from database
+  attributes: Attributes = generateAttributes();
+  // TODO: Fetch cards from database
+  deck: Deck = new Deck();
   hand: [CardType | null, CardType | null, CardType | null] = [
     null,
     null,
@@ -18,31 +23,6 @@ class Player extends SocketController {
   ];
   side?: Side;
   name?: string;
-
-  constructor(socket: Socket, game: Game) {
-    super(socket);
-
-    this.game = game;
-
-    logger.info("Player connected", { playerId: this.id });
-
-    this.emit("connected", socket.id);
-    this.emit(Room.QUEUE, this.game.connectedPlayers);
-
-    // Send the connected user to others
-    this.broadcastTo(Room.QUEUE, "add", {
-      id: socket.id,
-      name: "",
-      inMatch: false,
-    });
-
-    this.joinRoom(Room.QUEUE);
-
-    // TODO: Fetch cards from database
-    this.deck = new Deck();
-
-    this.registerListeners(handlers);
-  }
 
   get inTurn() {
     return this.match && this.side === this.match.side;
@@ -74,18 +54,42 @@ class Player extends SocketController {
     return !!this.match;
   }
 
-  public hurt(damage: number, message?: string) {
-    if (this.match) this.toNamespace(this.match.id, "pop", { damage, message });
+  constructor(socket: Socket, game: Game) {
+    super(socket);
+
+    this.game = game;
+
+    logger.info("Player connected", { playerId: this.id });
+
+    this.emit("connected", socket.id);
+    this.emit(Room.QUEUE, this.game.connectedPlayers);
+
+    // Send the connected user to others
+    this.broadcastTo(Room.QUEUE, "add", {
+      id: socket.id,
+      name: "",
+      inMatch: false,
+    });
+
+    this.joinRoom(Room.QUEUE);
+
+    this.registerListeners(handlers);
+  }
+
+  hurt(damage: number, message?: string) {
+    if (this.match) {
+      this.toNamespace(this.match.id, "pop", { damage, message });
+    }
   }
 
   win() {
-    this.handleLeaveMatch();
     this.emit("gameOver", "win");
+    this.handleLeaveMatch();
   }
 
   lose() {
-    this.handleLeaveMatch();
     this.emit("gameOver", "lose");
+    this.handleLeaveMatch();
   }
 
   toString() {
