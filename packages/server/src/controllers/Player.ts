@@ -16,17 +16,9 @@ class Player extends SocketController {
   attributes: Attributes = generateAttributes();
   // TODO: Fetch cards from database
   deck: Deck = new Deck();
-  hand: [CardType | null, CardType | null, CardType | null] = [
-    null,
-    null,
-    null,
-  ];
+  hand: CardType[] = [];
   side?: Side;
   name?: string;
-
-  get inTurn() {
-    return this.match && this.side === this.match.side;
-  }
 
   get hitPoints(): number | undefined {
     if (!this.match || this.side === undefined) {
@@ -76,12 +68,6 @@ class Player extends SocketController {
     this.registerListeners(handlers);
   }
 
-  hurt(damage: number, message?: string) {
-    if (this.match) {
-      this.toNamespace(this.match.id, "pop", { damage, message });
-    }
-  }
-
   win() {
     this.emit("gameOver", "win");
     this.handleLeaveMatch();
@@ -99,13 +85,15 @@ class Player extends SocketController {
   }
 
   findCardByIndex(cardIndex: number): CardType {
-    const cardToPlay = this.hand[cardIndex] as CardType;
-    const [newCard] = this.deck.draw(1);
-
-    this.hand[cardIndex] = newCard;
-
+    const { ...cardToPlay } = this.hand[cardIndex] as CardType;
     return cardToPlay;
   }
+
+  supplementHand = (cardIndex: number) => {
+    const [newCard] = this.deck.draw(1);
+    this.hand.splice(cardIndex, 1);
+    this.hand.push(newCard);
+  };
 
   handleLeaveMatch() {
     if (!this.match || !this.side) {

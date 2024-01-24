@@ -4,9 +4,9 @@ import React, {
   useContext,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { QueueContext } from "./context/QueueContext";
-import useSocket from "./hooks/useSocket";
-import Challenge from "./components/Challenge";
+import { QueueContext } from "../context/QueueContext";
+import useSocket from "../hooks/useSocket";
+import Challenge from "../components/Challenge";
 
 const Queue: FunctionComponent = () => {
   const { id, queue, challenges, name, setName } = useContext(QueueContext);

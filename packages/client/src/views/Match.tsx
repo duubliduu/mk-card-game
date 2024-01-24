@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
-import Card from "./Card";
+import Card from "../components/Card";
 import { useNavigate, useParams } from "react-router-dom";
-import Pop from "./Pop";
 import { CardType, Side } from "../types";
 import useSocket from "../hooks/useSocket";
 import { QueueContext } from "../context/QueueContext";
@@ -12,44 +11,56 @@ function Match() {
   const { setContent, setOpen } = useContext(ModalContext);
 
   const [opposingSide, setOpposingSide] = useState<Side>(Side.Right);
-  const [stacks, setStacks] = useState<{ [side in Side]: CardType[] }>({
-    [Side.Left]: [],
-    [Side.Right]: [],
+  const [table, setTable] = useState<{ [side in Side]: CardType | null }>({
+    [Side.Left]: null,
+    [Side.Right]: null,
   });
-  const [cards, setCards] = useState<
-    [CardType | null, CardType | null, CardType | null]
-  >([null, null, null]);
-  const [inTurn, setIntTurn] = useState<boolean>(false);
+  const [cards, setCards] = useState<CardType[]>([]);
   const [hitPoints, setHitPoints] = useState<{ [side in Side]: number }>({
     [Side.Left]: 100,
     [Side.Right]: 100,
   });
   const [side, setSide] = useState<Side>(Side.Left);
-  const [pops, setPops] = useState<{ damage: number; message: string }[]>([]);
-  const [isReady, setIsReady] = useState<boolean | undefined>();
+  const [pops, setPops] = useState<{
+    damage: { [Side.Left]: number; [Side.Right]: number };
+    message: string;
+  }>();
+  const [isReady, setIsReady] = useState<boolean>();
   const [opponent, setOpponent] = useState<
     Partial<{ id: string; name: string }>
   >({});
   const [hasEnded, setHasEnded] = useState<boolean>(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+
+  const dropSiteRef = React.useRef<HTMLDivElement>(null);
 
   useSocket({
     message: (message: string) => console.log("message", message),
-    hand: setCards,
-    play: (side: Side, card: CardType) => {
-      setStacks((state) => ({
-        ...state,
-        [side]: [...state[side], card],
-      }));
+    hand: (payload: CardType[]) => {
+      console.log("hand", payload);
+      setSelectedIndex(-1);
+      setCards([...payload]);
     },
-    stack: setStacks,
-    inTurn: setIntTurn,
+    table: (payload: any) => {
+      console.log("table", payload);
+      setTable(payload);
+    },
+    play: (payload: any) => {
+      console.log("play", payload);
+      setTable(payload);
+    },
     hitPoints: setHitPoints,
-    pop: (payload) =>
-      setPops((state) => (payload ? [...state, payload] : state)),
+    pop: setPops,
     side: setSide,
     ready: setIsReady,
     leave: () => setIsReady(false),
     opponent: setOpponent,
+    exit: () => {
+      navigate("/");
+    },
+    disconnect: () => {
+      navigate("/");
+    },
   });
 
   const { id: matchId } = useParams();
@@ -99,12 +110,35 @@ function Match() {
 
   const navigate = useNavigate();
 
-  const handlePlayCard = (index: number) => {
-    if (!isReady || !inTurn || hasEnded) {
-      return;
-    }
+  const isOverDropSite = (x: number, y: number) => {
+    if (!dropSiteRef.current) return false;
 
-    emit("play", index);
+    const { top, left } = dropSiteRef.current.getBoundingClientRect();
+
+    return (
+      x > left &&
+      y > top &&
+      x < left + dropSiteRef.current.clientWidth &&
+      y < top + dropSiteRef.current.clientHeight
+    );
+  };
+
+  const handleDrag = (event: MouseEvent) => {
+    if (!dropSiteRef.current) return;
+
+    if (isOverDropSite(event.clientX, event.clientY)) {
+      dropSiteRef.current.classList.add("border-gray-300");
+    } else {
+      dropSiteRef.current.classList.remove("border-gray-300");
+    }
+  };
+
+  const handleDrop = (index: number) => {
+    // :hand_on_mouth_laughing
+    if (dropSiteRef.current?.classList.contains("border-gray-300")) {
+      setSelectedIndex(index);
+      emit("play", index);
+    }
   };
 
   const handleExit = () => {
@@ -123,13 +157,12 @@ function Match() {
     setOpposingSide(Number(!side));
   }, [side]);
 
-  const { [side]: leftStack = [], [Number(!side) as Side]: rightStack = [] } = stacks;
-
-  const leftCard = leftStack[leftStack.length - 1];
-  const rightCard = rightStack[rightStack.length - 1];
-
+  const { [side]: leftCard, [Number(!side) as Side]: rightCard } = table;
+  const { damage, message } = pops ?? {};
+  const { [side]: leftDamage, [Number(!side) as Side]: rightDamage } =
+    damage ?? {};
   return (
-    <div className="bg-gray-100 h-screen">
+    <div className="bg-gray-100 h-screen select-none">
       <div className="container mx-auto py-4 px-4">
         <div className="pb-4 flex justify-between">
           <button onClick={handleExit}>Exit</button>
@@ -176,69 +209,63 @@ function Match() {
         <div className="py-4">
           <section>
             {hasEnded && <div>The match has ended</div>}
-            {isReady === undefined && (
-              <div>Waiting for opponent to join...</div>
-            )}
-            {isReady === false && <div>Opponent left</div>}
             {isReady && !hasEnded && (
-              <div className="flex justify-center relative">
-                <div className="flex align-middle justify-center aspect-landscape">
-                  {leftCard && (
-                    <div className="aspect-portrait" style={{marginRight:"-25%"}}>
+              <div className="relative flex justify-center">
+                <div
+                  className="flex h-64 justify-center w-full border-4"
+                  ref={dropSiteRef}
+                >
+                  <div className="rounded aspect-portrait relative">
+                    {leftCard && (
                       <img alt="" src={`/images/cards/${leftCard.image}`} />
+                    )}
+                    <div
+                      className="absolute w-full text-center"
+                      style={{
+                        top: `${60 - 20 * (rightCard?.guard ?? 0)}px`,
+                      }}
+                    >
+                      {!!leftDamage && leftDamage}
                     </div>
-                  )}
-                  {rightCard && (
-                    <div className="aspect-portrait"  style={{marginLeft:"-25%"}}>
-                      <img
-                        className="transform -scale-x-100"
-                        alt=""
-                        src={`/images/cards/${rightCard.image}`}
-                      />
-                    </div>
-                  )}
+                  </div>
+                  <div className="rounded aspect-portrait relative">
+                    {rightCard && (
+                      <>
+                        <img
+                          className="transform -scale-x-100"
+                          alt=""
+                          src={`/images/cards/${rightCard.image}`}
+                        />
+                        <div
+                          className="absolute w-full text-center"
+                          style={{
+                            top: `${60 - 20 * (rightCard?.guard ?? 0)}px`,
+                          }}
+                        >
+                          {!!rightDamage && rightDamage}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="absolute top-0">{message}</div>
                 </div>
-                {pops.map(({ damage, message }, index) => (
-                  <Pop key={index} sfx={damage === 0 ? "whiff" : "hit"}>
-                    {!!damage && (
-                      <div
-                        className="font-bold text-center"
-                        style={{ fontSize: "10vw" }}
-                      >
-                        {damage}
-                      </div>
-                    )}
-                    {message && (
-                      <div
-                        className="font-bold text-center"
-                        style={{ fontSize: "10vw" }}
-                      >
-                        {message}
-                      </div>
-                    )}
-                  </Pop>
-                ))}
               </div>
             )}
           </section>
         </div>
         <section
           className="flex justify-around"
-          style={{ opacity: isReady && !hasEnded && inTurn ? 1 : 0.5 }}
+          style={{ opacity: isReady === true ? 1 : 0.5 }}
         >
-          {cards.map((card, index) =>
-            card ? (
-              <Card
-                onClick={() => handlePlayCard(index)}
-                key={index}
-                {...card}
-              />
-            ) : (
-              <article key={index} className="px-2 py-2 h-48 cursor-pointer">
-                No card
-              </article>
-            )
-          )}
+          {cards.map((card, cardIndex) => (
+            <Card
+              key={cardIndex}
+              onDrop={() => handleDrop(cardIndex)}
+              onDrag={handleDrag}
+              selected={cardIndex === selectedIndex}
+              image={card.image}
+            />
+          ))}
         </section>
       </div>
     </div>

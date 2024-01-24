@@ -1,11 +1,10 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom/client";
 import "./index.css";
-import Match from "./components/Match";
+import Match from "./views/Match";
 import reportWebVitals from "./reportWebVitals";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Queue from "./Queue";
-import Deck from "./components/Deck";
+import Queue from "./views/Queue";
 import QueueProvider from "./context/QueueContext";
 import ModalProvider from "./context/ModalContext";
 
@@ -17,11 +16,7 @@ const router = createBrowserRouter([
   {
     path: "/match/:id?",
     element: <Match />,
-  },
-  {
-    path: "/deck",
-    element: <Deck />,
-  },
+  }
 ]);
 
 const root = ReactDOM.createRoot(

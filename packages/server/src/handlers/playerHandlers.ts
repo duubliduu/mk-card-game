@@ -1,21 +1,37 @@
 import Player from "../controllers/Player";
 import logger from "../utils/logger";
-import { CardType, Room } from "../types";
+import { CardType, Room, Side } from "../types";
+import { HitPoints } from "../types/player";
+import Match from "../controllers/Match";
 
 export const play = (player: Player, cardIndex: number) => {
+  logger.info("Player played a card", { cardIndex, playerId: player.id });
+
   if (!player.match) {
+    player.emit("exit");
     return;
   }
 
   const cardToPlay = player.findCardByIndex(cardIndex);
 
-  player.match.play(cardToPlay);
+  const tableUpdate = {
+    [player.side!]: cardToPlay,
+    [player.opposingSide]: null,
+  };
 
-  // the played card goes to everybody
-  player.toNamespace(player.match.id, "play", player.side, cardToPlay);
+  player.emit("table", tableUpdate);
+  player.emit("pop", {
+    damage: {
+      [Side.Left]: 0,
+      [Side.Right]: 0,
+    },
+    message: "",
+  });
 
-  // cards on your hand goes just to you
-  player.emit("hand", player.hand);
+  player.match.play(player.side!, {
+    index: cardIndex,
+    card: player.findCardByIndex(cardIndex),
+  });
 };
 
 export function leaveMatch(player: Player) {
@@ -51,11 +67,11 @@ export function joinMatch(player: Player, matchId: string) {
   player.joinRoom(matchId);
 
   player.emit("hand", player.hand);
+  logger.info("side", player.side);
   player.emit("side", player.side);
-  player.emit("inTurn", player.inTurn);
-  player.emit("stack", player.match?.stack ?? {});
 
-  player.toNamespace(matchId, "ready", player.match?.isReady);
+  player.toNamespace(matchId, "ready", player.match?.hasPlayers);
+  logger.info(`Is player ready ${player.match?.hasPlayers}`);
 
   if (player.opponent) {
     const { id, name } = player.opponent;
@@ -104,10 +120,14 @@ export const disconnect = (player: Player) => {
   player.game.removePlayer(player.id);
 };
 
-export const afterPlay = (player: Player) => {
-  player.emit("hitPoints", player.match?.hitPoints || {});
-  player.emit("inTurn", player.inTurn);
-  if (player.match) {
-    player.to(player.match.id, "inTurn", player.opponent?.inTurn);
-  }
+export const afterPlay = (
+  player: Player,
+  match: Match,
+  damage: HitPoints,
+  message: string
+) => {
+  player.emit("hand", player.hand);
+  player.emit("pop", { damage, message });
+  player.emit("table", match.cardsOnTable);
+  player.emit("hitPoints", match.hitPoints);
 };

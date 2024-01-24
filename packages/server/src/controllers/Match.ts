@@ -1,18 +1,15 @@
 import { v4 as uuidv4 } from "uuid";
 import { CardType, Side } from "../types";
-import { resolveDamage } from "../utils/resolveDamage";
+import { resolveAttack } from "../utils/resolveAttack";
 import Player from "./Player";
 import logger from "../utils/logger";
 import * as playerHandlers from "../handlers/playerHandlers";
 import { Game } from "./Game";
-
-type HitPoints = { [side in Side]: number };
+import { flipSide } from "../utils/general";
+import { HitPoints } from "../types/player";
 
 class Match {
-  private timer?: NodeJS.Timeout;
-
   public id: string = uuidv4();
-  public side: Side = Side.Left;
   public hitPoints: HitPoints = {
     [Side.Left]: 100,
     [Side.Right]: 100,
@@ -21,87 +18,93 @@ class Match {
     [Side.Left]: null,
     [Side.Right]: null,
   };
-  public stack: { [side in Side]: CardType[] } = {
-    [Side.Left]: [],
-    [Side.Right]: [],
+  // Cards on the table
+  public table: { [side in Side]: { index: number; card: CardType | null } } = {
+    [Side.Left]: {
+      index: -1,
+      card: null,
+    },
+    [Side.Right]: {
+      index: -1,
+      card: null,
+    },
   };
 
   game: Game;
+
+  get hasPlayers(): boolean {
+    return !!this.players[Side.Left] && !!this.players[Side.Right];
+  }
 
   constructor(game: Game) {
     this.game = game;
   }
 
-  get isReady(): boolean {
-    return !!this.players[Side.Left] && !!this.players[Side.Right];
+  dealDamage(damage: { [Side.Left]: number; [Side.Right]: number }) {
+    if (damage[Side.Left] > 0) {
+      this.hitPoints[Side.Left] -= damage[Side.Left];
+    }
+    if (damage[Side.Right] > 0) {
+      this.hitPoints[Side.Right] -= damage[Side.Right];
+    }
   }
 
-  get opposingSide(): Side {
-    return Number(!this.side);
+  clearTable() {
+    this.table = {
+      [Side.Left]: {
+        index: -1,
+        card: null,
+      },
+      [Side.Right]: {
+        index: -1,
+        card: null,
+      },
+    };
   }
 
-  get hasPlayers(): boolean {
-    return (
-      this.players[Side.Left] !== null && this.players[Side.Right] !== null
+  dealCards() {
+    Object.values(this.players).forEach((player) => {
+      if (player) {
+        player.supplementHand(this.table[player.side!].index);
+      }
+    });
+  }
+
+  play(side: Side, card: { index: number; card: CardType }) {
+    // Set card on the table, your side, face down
+    this.table[side] = card;
+
+    if (this.table[flipSide(side)].index === -1) {
+      return;
+    }
+
+    const { [Side.Left]: leftCard, [Side.Right]: rightCard } = this.table;
+
+    const { damage, message } = resolveAttack(
+      leftCard!.card!,
+      rightCard!.card!
     );
-  }
 
-  dealDamage(damage: number, message?: string) {
-    // Negative damage hurts you
-    if (damage < 0) {
-      if (this.hitPoints[this.side] < damage) {
-        this.hitPoints[this.side] = 0;
-      } else {
-        this.hitPoints[this.side] += damage;
-      }
-    } else {
-      if (this.hitPoints[this.opposingSide] < damage) {
-        this.hitPoints[this.opposingSide] = 0;
-      } else {
-        this.hitPoints[this.opposingSide] -= damage;
-      }
-    }
+    this.dealDamage(damage);
 
-    this.players[this.opposingSide]?.hurt(damage, message);
-  }
+    this.dealCards();
 
-  endTurn() {
-    this.side = this.opposingSide;
-  }
-
-  get topCard() {
-    const stack = this.stack[this.opposingSide];
-    const lastIndex = stack.length - 1;
-    return stack[lastIndex];
-  }
-
-  pass() {
-    logger.info("Cleared timeout", { timer: this.timer });
-
-    this.dealDamage(0, "Timeout!");
-
-    this.endTurn();
-
-    this.trigger("afterPlay");
-  }
-
-  play(card: CardType) {
-    const { damage, endTurn, message } = resolveDamage(card, this.topCard);
-
-    // replace the top card
-    this.stack[this.side].push(card);
-
-    this.dealDamage(damage, message);
-
-    if (endTurn) {
-      this.endTurn();
-    }
-
-    this.trigger("afterPlay");
+    this.trigger("afterPlay", this, damage, message);
 
     if (this.isGameOver) {
       this.gameOver();
     }
+
+    this.clearTable();
+  }
+
+  get cardsOnTable() {
+    return Object.entries(this.table).reduce((table, [side, tableItem]) => {
+      return {
+        ...table,
+        [side]: tableItem.card,
+      };
+    }, {});
   }
 
   get isGameOver() {
@@ -109,9 +112,13 @@ class Match {
   }
 
   private trigger(event: keyof typeof playerHandlers, ...args: any[]) {
-    const player = this.players[this.side];
-    // @ts-ignore
-    playerHandlers[event](player, ...args);
+    for (let side in this.players) {
+      const player = this.players[side as unknown as Side];
+      if (player) {
+        // @ts-ignore
+        playerHandlers[event](player, ...args);
+      }
+    }
   }
 
   join(player: Player): Side | undefined {

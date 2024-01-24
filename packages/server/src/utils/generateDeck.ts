@@ -61,41 +61,41 @@ export const buildDeck = () => {
   });
 
   // Utility cards
-  deck.push({
-    image: "advance.png",
-    guard: Guard.Mid,
-    reach: Reach.None,
-    weight: 0,
-    move: 1,
-  });
-  deck.push({
-    image: "evade.png",
-    guard: Guard.Mid,
-    reach: Reach.None,
-    weight: 0,
-    move: -1,
-  });
-  deck.push({
-    image: "jump-neutral.png",
-    guard: Guard.Air,
-    reach: Reach.None,
-    weight: 0,
-    move: 0,
-  });
-  deck.push({
-    image: "jump-backwards.png",
-    guard: Guard.Air,
-    reach: Reach.None,
-    weight: 0,
-    move: -1,
-  });
-  deck.push({
-    image: "jump-forward.png",
-    guard: Guard.Air,
-    reach: Reach.None,
-    weight: 0,
-    move: 1,
-  });
+  // deck.push({
+  //   image: "advance.png",
+  //   guard: Guard.Mid,
+  //   reach: Reach.None,
+  //   weight: 0,
+  //   move: 1,
+  // });
+  // deck.push({
+  //   image: "evade.png",
+  //   guard: Guard.Mid,
+  //   reach: Reach.None,
+  //   weight: 0,
+  //   move: -1,
+  // });
+  // deck.push({
+  //   image: "jump-neutral.png",
+  //   guard: Guard.Air,
+  //   reach: Reach.None,
+  //   weight: 0,
+  //   move: 0,
+  // });
+  // deck.push({
+  //   image: "jump-backwards.png",
+  //   guard: Guard.Air,
+  //   reach: Reach.None,
+  //   weight: 0,
+  //   move: -1,
+  // });
+  // deck.push({
+  //   image: "jump-forward.png",
+  //   guard: Guard.Air,
+  //   reach: Reach.None,
+  //   weight: 0,
+  //   move: 1,
+  // });
 
   return deck;
 };

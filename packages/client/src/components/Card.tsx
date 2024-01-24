@@ -1,32 +1,59 @@
-import { FunctionComponent } from "react";
+import React, {
+  FunctionComponent,
+  MouseEventHandler,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { CardType } from "../types";
+import useDragging from "../hooks/useDragging";
 
 type CardProps = {
   image: string;
-  onClick?: () => void;
+  onDrop: () => void;
+  onDrag?: (event: MouseEvent) => void;
+  selected?: boolean;
   flip?: boolean;
-} & CardType;
+};
 
 const Card: FunctionComponent<CardProps> = ({
   image,
+  onDrop,
+  onDrag,
+  selected = false,
   flip = false,
-  onClick,
-}) => (
-  <article
-    style={{ transform: `rotate(${Math.random() * 2 - 1}deg)` }}
-    className={`rounded border-slate-500 ${
-      onClick ? "cursor-pointer" : ""
-    } aspect-portrait p-1 bg-white drop-shadow-md`}
-    {...(onClick && { onClick })}
-  >
-    <div className="rounded bg-slate-200 border-2 border-slate-300 h-full flex flex-col justify-center p-2">
-      <img
-        className={`${flip && "transform -scale-x-100"}`}
-        alt={`/images/cards/${image}`}
-        src={`/images/cards/${image}`}
-      />
-    </div>
-  </article>
-);
+}) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const transform = ""; //`rotate(${Math.random() * 2 - 1}deg)`;
+
+  const isDragging = useDragging({
+    ref: cardRef,
+    onMouseUp: onDrop,
+    onMouseMove: onDrag,
+  });
+
+  return (
+    <article
+      style={{ transform, width: "200px" }}
+      className={`rounded aspect-portrait bg-slate-200`}
+    >
+      <div
+        ref={cardRef}
+        className="rounded aspect-portrait bg-white p-2"
+        style={{ visibility: selected ? "hidden" : "visible", width: "200px" }}
+      >
+        <div className="rounded aspect-portrait p-2 border border-slate-600">
+          <img
+            className={`${flip && "transform -scale-x-100"}`}
+            alt={image}
+            src={`/images/cards/${image}`}
+          />
+        </div>
+      </div>
+    </article>
+  );
+};
 
 export default Card;
