@@ -4,7 +4,7 @@ import useDragging from "../hooks/useDragging";
 type CardProps = {
   image: string;
   onDrop: () => void;
-  onDrag?: (event: MouseEvent) => void;
+  onDrag?: <T extends Event>(event: T) => void;
   selected?: boolean;
   flip?: boolean;
 };

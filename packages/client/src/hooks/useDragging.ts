@@ -1,9 +1,10 @@
 import { RefObject, useCallback, useEffect, useRef } from "react";
+import { getClientCoordinates } from "../utils/getClientCoordinates";
 
 type Props = {
   ref: RefObject<HTMLElement>;
-  onMouseDown?: (event: MouseEvent) => void;
-  onMouseMove?: (event: MouseEvent) => void;
+  onMouseDown?: <T extends Event>(event: T) => void;
+  onMouseMove?: <T extends Event>(event: T) => void;
   onMouseUp?: () => void;
 };
 
@@ -20,29 +21,38 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
   );
 
   const handleMouseDown = useCallback(
-    (event: MouseEvent) => {
+    <T extends Event>(event: T) => {
       event.preventDefault();
       ref.current!.style.position = "absolute";
       isDragging.current = true;
-      updateCardPosition(event.clientX, event.clientY);
-      if (typeof onMouseDown === "function") onMouseDown(event);
+
+      const [x, y] = getClientCoordinates<T>(event);
+      updateCardPosition(x, y);
+
+      if (typeof onMouseDown === "function") onMouseDown<T>(event);
     },
     [onMouseDown, ref, updateCardPosition]
   );
 
   const handleMouseMove = useCallback(
-    (event: MouseEvent) => {
+    <T extends Event>(event: T) => {
       if (!isDragging.current) return;
-      updateCardPosition(event.clientX, event.clientY);
-      if (typeof onMouseMove === "function") onMouseMove(event);
+
+      const [x, y] = getClientCoordinates<T>(event);
+      updateCardPosition(x, y);
+
+      if (typeof onMouseMove === "function") onMouseMove<T>(event);
     },
     [updateCardPosition, onMouseMove]
   );
 
   const handleMouseUp = useCallback(() => {
     if (!isDragging.current) return;
+
     isDragging.current = false;
+
     ref.current!.style.position = "static";
+
     if (typeof onMouseUp === "function") onMouseUp();
   }, [onMouseUp, ref]);
 
@@ -51,14 +61,23 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
 
     const localRef = ref.current;
 
-    localRef.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("mousemove", handleMouseMove);
+    // mouse
+    localRef.addEventListener("mousedown", handleMouseDown<MouseEvent>);
+    document.addEventListener("mousemove", handleMouseMove<MouseEvent>);
     document.addEventListener("mouseup", handleMouseUp);
+    // touch
+    localRef.addEventListener("touchstart", handleMouseDown<TouchEvent>);
+    document.addEventListener("touchmove", handleMouseMove<TouchEvent>);
+    document.addEventListener("touchend", handleMouseUp);
 
     return () => {
-      localRef.removeEventListener("mousedown", handleMouseDown);
-      document.removeEventListener("mousemove", handleMouseMove);
+      localRef.removeEventListener("mousedown", handleMouseDown<MouseEvent>);
+      document.removeEventListener("mousemove", handleMouseMove<MouseEvent>);
       document.removeEventListener("mouseup", handleMouseUp);
+
+      localRef.removeEventListener("touchstart", handleMouseDown<TouchEvent>);
+      document.removeEventListener("touchmove", handleMouseMove<TouchEvent>);
+      document.removeEventListener("touchend", handleMouseUp);
     };
   }, [ref, handleMouseDown, handleMouseMove, handleMouseUp]);
 

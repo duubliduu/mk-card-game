@@ -5,6 +5,7 @@ import { CardType, Side } from "../types";
 import useSocket from "../hooks/useSocket";
 import { QueueContext } from "../context/QueueContext";
 import { ModalContext } from "../context/ModalContext";
+import { getClientCoordinates } from "../utils/getClientCoordinates";
 
 function Match() {
   const { id, name } = useContext(QueueContext);
@@ -123,10 +124,12 @@ function Match() {
     );
   };
 
-  const handleDrag = (event: MouseEvent) => {
+  const handleDrag = <T extends Event>(event: T) => {
     if (!dropSiteRef.current) return;
 
-    if (isOverDropSite(event.clientX, event.clientY)) {
+    const [x, y] = getClientCoordinates(event);
+
+    if (isOverDropSite(x, y)) {
       dropSiteRef.current.classList.add("border-gray-300");
     } else {
       dropSiteRef.current.classList.remove("border-gray-300");
@@ -261,7 +264,7 @@ function Match() {
             <Card
               key={cardIndex}
               onDrop={() => handleDrop(cardIndex)}
-              onDrag={handleDrag}
+              onDrag={handleDrag<Event>}
               selected={cardIndex === selectedIndex}
               image={card.image}
             />
