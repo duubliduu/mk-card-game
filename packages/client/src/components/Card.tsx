@@ -1,12 +1,4 @@
-import React, {
-  FunctionComponent,
-  MouseEventHandler,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { CardType } from "../types";
+import React, { FunctionComponent, useRef } from "react";
 import useDragging from "../hooks/useDragging";
 
 type CardProps = {
@@ -28,7 +20,7 @@ const Card: FunctionComponent<CardProps> = ({
 
   const transform = ""; //`rotate(${Math.random() * 2 - 1}deg)`;
 
-  const isDragging = useDragging({
+  useDragging({
     ref: cardRef,
     onMouseUp: onDrop,
     onMouseMove: onDrag,

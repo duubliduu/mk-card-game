@@ -5,6 +5,10 @@ class Deck {
   cards: CardType[] = [];
   playedCards: CardType[] = [];
 
+  get length() {
+    return this.cards.length;
+  }
+
   constructor() {
     this.cards = generateDeck();
     this.shuffle();
@@ -15,17 +19,18 @@ class Deck {
   }
 
   draw(numberOfCards: number): CardType[] {
-    if (numberOfCards > this.cards.length) {
-      const drawnCards = this.draw(this.cards.length);
+    if (this.length === 0) {
+      this.reShuffle();
+    }
+
+    if (numberOfCards > this.length) {
+      const drawnCards = this.draw(this.length);
       this.reShuffle();
       return [...drawnCards, ...this.draw(numberOfCards - this.cards.length)];
     }
+
     const cards = this.cards.splice(0, numberOfCards);
     this.playedCards.push(...cards);
-
-    if (this.cards.length === 0) {
-      this.reShuffle();
-    }
 
     return cards;
   }
