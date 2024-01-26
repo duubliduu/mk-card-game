@@ -1,6 +1,9 @@
 {
   "name": "@combat-cards/server",
   "version": "0.1.0",
+  "directories": {
+    "test": "tests"
+  },
   "dependencies": {
     "redis": "^4.6.7",
     "socket.io": "^4.6.2",
@@ -14,12 +17,15 @@
   "scripts": {
     "start": "nodemon src/server.ts",
     "forever": "forever start server.js",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest --watch"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.11",
     "@types/node": "^16.18.36",
     "@types/uuid": "^9.0.2",
     "nodemon": "^3.0.3",
-    "prettier": "^2.8.8"
+    "prettier": "^2.8.8",
+    "ts-jest": "^29.1.2"
   }
 }

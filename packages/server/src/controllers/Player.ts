@@ -1,36 +1,24 @@
 import { Socket } from "socket.io";
-import { CardType, Side } from "../types";
-import generateDeck from "../utils/generateDeck";
+import { CardType, Room, Side } from "../types";
 import Match from "./Match";
 import logger from "../utils/logger";
 import * as handlers from "../handlers/playerHandlers";
+import SocketController from "./SocketController";
+import Deck from "./Deck";
+import { Game } from "./Game";
+import { Attributes } from "../types/player";
+import { generateAttributes } from "../utils/generateCharacteristics";
 
-class Player {
-  socket: Socket;
-  name?: string;
+class Player extends SocketController {
+  game: Game;
   match: Match | null = null;
-  deck: CardType[] = [];
-  hand: [CardType | null, CardType | null, CardType | null] = [
-    null,
-    null,
-    null,
-  ];
+  // TODO: Fetch cards from database
+  attributes: Attributes = generateAttributes();
+  // TODO: Fetch cards from database
+  deck: Deck = new Deck();
+  hand: CardType[] = [];
   side?: Side;
-  constructor(socket: Socket) {
-    this.socket = socket;
-
-    // send side to everyone
-    this.socket.emit("side", this.side);
-
-    // Register listeners
-    this.socket.on("play", (cardIndex: number) => {
-      handlers.onPlay(this, cardIndex);
-    });
-  }
-
-  get inTurn() {
-    return this.match && this.side === this.match.side;
-  }
+  name?: string;
 
   get hitPoints(): number | undefined {
     if (!this.match || this.side === undefined) {
@@ -48,7 +36,7 @@ class Player {
   }
 
   get opponent(): Player | null {
-    if (!this.match) {
+    if (!this.match || !this.side) {
       return null;
     }
     return this.match.players[this.opposingSide];
@@ -58,86 +46,82 @@ class Player {
     return !!this.match;
   }
 
-  drawFromDeck(...indexes: number[]) {
-    indexes.forEach((index) => {
-      const [card] = this.deck.splice(0, 1);
-      this.hand[index] = card;
-    });
-  }
+  constructor(socket: Socket, game: Game) {
+    super(socket);
 
-  public hurt(damage: number, message?: string) {
-    if (this.match !== null) {
-      this.socket.nsp.to(this.match.id).emit("pop", { damage, message });
-    }
-  }
+    this.game = game;
 
-  public joinMatch(match: Match) {
-    this.match = match;
+    logger.info("Player connected", { playerId: this.id });
 
-    this.deck = generateDeck();
+    this.emit("connected", socket.id);
+    this.emit(Room.QUEUE, this.game.connectedPlayers);
 
-    this.drawFromDeck(0, 1, 2);
-
-    this.socket.emit("hand", this.hand);
-
-    // Add player to match
-    const side = this.match.join(this);
-
-    if (side === undefined) {
-      return false;
-    }
-    // Set side
-    this.side = side;
-    logger.info(`Player assigned to a side`, {
-      user: this.id,
-      side: Side[side],
+    // Send the connected user to others
+    this.broadcastTo(Room.QUEUE, "add", {
+      id: socket.id,
+      name: "",
+      inMatch: false,
     });
 
-    // Join the room
-    this.socket.leave("queue");
-    this.socket.join(this.match.id);
+    this.joinRoom(Room.QUEUE);
 
-    // Push the current stack to player
-    this.socket.emit("stack", this.match.stack);
-    this.socket.emit("side", this.side);
-    this.socket.emit("inTurn", this.inTurn);
-
-    this.match.on("afterPlay", (isGameOver: boolean, match: Match | null) => {
-      if (!this.match) {
-        logger.warn("The match is already over");
-        match = null;
-        return;
-      }
-
-      this.socket.emit("hitPoints", this.match?.hitPoints);
-      this.socket.emit("inTurn", this.inTurn);
-    });
-
-    if (this.opponent) {
-      logger.info(`The match ${match.id} has opponent ${this.opponent.name}`, {
-        user: this.id,
-        opponent: this.opponent.id,
-      });
-      // Emit your name to opponent
-      const { id, name } = this.opponent || {};
-
-      this.socket.emit("opponent", { id, name });
-      this.socket.to(id).emit("opponent", { id: this.id, name: this.name });
-    }
+    this.registerListeners(handlers);
   }
 
   win() {
-    this.socket.emit("gameOver", "win");
+    this.emit("gameOver", "win");
+    this.handleLeaveMatch();
   }
 
   lose() {
-    this.socket.emit("gameOver", "lose");
+    this.emit("gameOver", "lose");
+    this.handleLeaveMatch();
   }
 
   toString() {
     const { socket, ...rest } = this;
 
     return JSON.stringify(rest);
+  }
+
+  findCardByIndex(cardIndex: number): CardType {
+    const { ...cardToPlay } = this.hand[cardIndex] as CardType;
+    return cardToPlay;
+  }
+
+  supplementHand = (cardIndex: number) => {
+    const [newCard] = this.deck.draw(1);
+    this.hand.splice(cardIndex, 1);
+    this.hand.push(newCard);
+  };
+
+  handleLeaveMatch() {
+    if (!this.match || !this.side) {
+      logger.error("Player is not in a match", { playerId: this.id });
+      return;
+    }
+
+    const matchId = this.match.id;
+    this.emit("leave", matchId);
+
+    this.match.leave(this.side);
+    this.match = null;
+
+    this.broadcastTo(Room.QUEUE, "update", {
+      id: this.id,
+      name: this.name,
+      inMatch: this.inMatch,
+    });
+
+    this.leaveRoom(matchId);
+    this.joinRoom(Room.QUEUE);
+
+    this.emit("leave", matchId);
+
+    logger.info("Player left the match", {
+      playerId: this.id,
+      matchId,
+    });
   }
 }
 

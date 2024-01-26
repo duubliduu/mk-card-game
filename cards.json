@@ -1,0 +1,205 @@
+[
+  {
+    "image": "guard-mid.png",
+    "stance": 1,
+    "reach": 1,
+    "weight": 0
+  },
+  {
+    "image": "guard-high.png",
+    "stance": 2,
+    "reach": 1,
+    "weight": 0
+  },
+  {
+    "image": "grapple-mid.png",
+    "stance": 1,
+    "reach": 2,
+    "weight": 0
+  },
+  {
+    "image": "punch-low-light.png",
+    "stance": 0,
+    "reach": 3,
+    "weight": 1
+  },
+  {
+    "image": "punch-low-medium.png",
+    "stance": 0,
+    "reach": 3,
+    "weight": 2
+  },
+  {
+    "image": "punch-low-heavy.png",
+    "stance": 0,
+    "reach": 3,
+    "weight": 3
+  },
+  {
+    "image": "punch-mid-light.png",
+    "stance": 1,
+    "reach": 3,
+    "weight": 1
+  },
+  {
+    "image": "punch-mid-medium.png",
+    "stance": 1,
+    "reach": 3,
+    "weight": 2
+  },
+  {
+    "image": "punch-mid-heavy.png",
+    "stance": 1,
+    "reach": 3,
+    "weight": 3
+  },
+  {
+    "image": "punch-high-light.png",
+    "stance": 2,
+    "reach": 3,
+    "weight": 1
+  },
+  {
+    "image": "punch-high-medium.png",
+    "stance": 2,
+    "reach": 3,
+    "weight": 2
+  },
+  {
+    "image": "punch-high-heavy.png",
+    "stance": 2,
+    "reach": 3,
+    "weight": 3
+  },
+  {
+    "image": "knee-mid-medium.png",
+    "stance": 1,
+    "reach": 4,
+    "weight": 2
+  },
+  {
+    "image": "knee-mid-heavy.png",
+    "stance": 1,
+    "reach": 4,
+    "weight": 3
+  },
+  {
+    "image": "kick-low-light.png",
+    "stance": 0,
+    "reach": 5,
+    "weight": 1
+  },
+  {
+    "image": "kick-low-medium.png",
+    "stance": 0,
+    "reach": 5,
+    "weight": 2
+  },
+  {
+    "image": "kick-low-heavy.png",
+    "stance": 0,
+    "reach": 5,
+    "weight": 3
+  },
+  {
+    "image": "kick-mid-light.png",
+    "stance": 1,
+    "reach": 5,
+    "weight": 1
+  },
+  {
+    "image": "kick-mid-medium.png",
+    "stance": 1,
+    "reach": 5,
+    "weight": 2
+  },
+  {
+    "image": "kick-mid-heavy.png",
+    "stance": 1,
+    "reach": 5,
+    "weight": 3
+  },
+  {
+    "image": "kick-high-light.png",
+    "stance": 2,
+    "reach": 5,
+    "weight": 1
+  },
+  {
+    "image": "kick-high-medium.png",
+    "stance": 2,
+    "reach": 5,
+    "weight": 2
+  },
+  {
+    "image": "kick-high-heavy.png",
+    "stance": 2,
+    "reach": 5,
+    "weight": 3
+  },
+  {
+    "image": "kick-air-light.png",
+    "stance": 3,
+    "reach": 5,
+    "weight": 1
+  },
+  {
+    "image": "kick-air-medium.png",
+    "stance": 3,
+    "reach": 5,
+    "weight": 2
+  },
+  {
+    "image": "kick-air-heavy.png",
+    "stance": 3,
+    "reach": 5,
+    "weight": 3
+  },
+  {
+    "image": "fireball-low.png",
+    "stance": 0,
+    "reach": 6,
+    "weight": 0
+  },
+  {
+    "image": "fireball-high.png",
+    "stance": 2,
+    "reach": 6,
+    "weight": 0
+  },
+  {
+    "image": "advance.png",
+    "stance": 1,
+    "reach": 0,
+    "weight": 0,
+    "move": 1
+  },
+  {
+    "image": "evade.png",
+    "stance": 1,
+    "reach": 0,
+    "weight": 0,
+    "move": -1
+  },
+  {
+    "image": "jump-neutral.png",
+    "stance": 3,
+    "reach": 0,
+    "weight": 0,
+    "move": 0
+  },
+  {
+    "image": "jump-backwards.png",
+    "stance": 3,
+    "reach": 0,
+    "weight": 0,
+    "move": -1
+  },
+  {
+    "image": "jump-forward.png",
+    "stance": 3,
+    "reach": 0,
+    "weight": 0,
+    "move": 1
+  }
+]

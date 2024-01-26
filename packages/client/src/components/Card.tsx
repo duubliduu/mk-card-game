@@ -1,39 +1,51 @@
-import { FunctionComponent } from "react";
-import { CardType, Pressure, Reach, Stance, Weight } from "../types";
+import React, { FunctionComponent, useRef } from "react";
+import useDragging from "../hooks/useDragging";
 
 type CardProps = {
-  onClick?: () => void;
+  image: string;
+  onDrop: () => void;
+  onDrag?: (event: MouseEvent) => void;
+  selected?: boolean;
   flip?: boolean;
-} & CardType;
+};
 
 const Card: FunctionComponent<CardProps> = ({
-  stance,
-  reach,
-  weight,
-  pressure,
+  image,
+  onDrop,
+  onDrag,
+  selected = false,
   flip = false,
-  onClick,
-}) => (
-  <article
-    style={{ transform: `rotate(${Math.random() * 2 - 1}deg)` }}
-    className={`rounded border-slate-500 ${
-      onClick ? "cursor-pointer" : ""
-    } h-48 w-32 p-1 bg-white drop-shadow-md`}
-    {...(onClick && { onClick })}
-  >
-    <div className="text-center rounded border-2 h-full flex flex-col justify-between p-2">
-      {pressure === Pressure.Defensive && (
-        <img alt={""} src={`/images/cards/defending.png`} className="absolute" />
-      )}
-      <img
-        className={`${flip && "transform -scale-x-100"}`}
-        alt={""}
-        src={`/images/cards/${Stance[stance].toLowerCase()}/${Weight[
-          weight
-        ].toLowerCase()}/${Reach[reach].toLowerCase()}.jpg`}
-      />
-    </div>
-  </article>
-);
+}) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const transform = ""; //`rotate(${Math.random() * 2 - 1}deg)`;
+
+  useDragging({
+    ref: cardRef,
+    onMouseUp: onDrop,
+    onMouseMove: onDrag,
+  });
+
+  return (
+    <article
+      style={{ transform, width: "200px" }}
+      className={`rounded aspect-portrait bg-slate-200`}
+    >
+      <div
+        ref={cardRef}
+        className="rounded aspect-portrait bg-white p-2"
+        style={{ visibility: selected ? "hidden" : "visible", width: "200px" }}
+      >
+        <div className="rounded aspect-portrait p-2 border border-slate-600">
+          <img
+            className={`${flip && "transform -scale-x-100"}`}
+            alt={image}
+            src={`/images/cards/${image}`}
+          />
+        </div>
+      </div>
+    </article>
+  );
+};
 
 export default Card;

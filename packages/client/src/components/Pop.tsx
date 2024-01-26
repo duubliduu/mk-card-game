@@ -27,7 +27,7 @@ const Pop: FunctionComponent<PopProps> = ({ children, sfx }) => {
 
   return (
     <div
-      className={`absolute transition-opacity ${animate ? "opacity-0" : ""}`}
+      className={`top-0 absolute transition-opacity ${animate ? "opacity-0" : ""}`}
     >
       {children}
     </div>

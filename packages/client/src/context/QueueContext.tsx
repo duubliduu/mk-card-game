@@ -42,7 +42,7 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
   );
 
   const emit = useSocket({
-    id: setId,
+    connected: setId,
     queue: setQueue,
     add: (payload: QueueItem) => {
       setQueue((state) => [...state, payload]);
@@ -56,12 +56,14 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
       );
     },
     challenge: (payload: { matchId: string; name: string }) => {
+      console.log("challenge", payload);
       setChallenges((state) => ({
         ...state,
         [payload.matchId]: payload.name,
       }));
     },
     leave: (matchId: string) => {
+      console.log("leave", matchId);
       setChallenges((state) => {
         // Remove the challenge from the list
         const { [matchId]: _, ...rest } = state;

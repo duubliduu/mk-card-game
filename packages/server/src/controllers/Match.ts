@@ -1,17 +1,15 @@
 import { v4 as uuidv4 } from "uuid";
 import { CardType, Side } from "../types";
-import { resolveDamage } from "../utils/resolveDamage";
+import { resolveAttack } from "../utils/resolveAttack";
 import Player from "./Player";
 import logger from "../utils/logger";
-
-type HitPoints = { [side in Side]: number };
+import * as playerHandlers from "../handlers/playerHandlers";
+import { Game } from "./Game";
+import { flipSide } from "../utils/general";
+import { HitPoints } from "../types/player";
 
 class Match {
-  private events: { [key: string]: Function[] } = {};
-  private timer?: NodeJS.Timeout;
-
   public id: string = uuidv4();
-  public side: Side = Side.Left;
   public hitPoints: HitPoints = {
     [Side.Left]: 100,
     [Side.Right]: 100,
@@ -20,102 +18,107 @@ class Match {
     [Side.Left]: null,
     [Side.Right]: null,
   };
-  public stack: { [side in Side]: CardType[] } = {
-    [Side.Left]: [],
-    [Side.Right]: [],
+  // Cards on the table
+  public table: { [side in Side]: { index: number; card: CardType | null } } = {
+    [Side.Left]: {
+      index: -1,
+      card: null,
+    },
+    [Side.Right]: {
+      index: -1,
+      card: null,
+    },
   };
 
-  get isReady(): boolean {
+  game: Game;
+
+  get hasPlayers(): boolean {
     return !!this.players[Side.Left] && !!this.players[Side.Right];
   }
 
-  get opposingSide(): Side {
-    return Number(!this.side);
+  constructor(game: Game) {
+    this.game = game;
   }
 
-  dealDamage(damage: number, message?: string) {
-    // Negative damage hurts you
-    if (damage < 0) {
-      if (this.hitPoints[this.side] < damage) {
-        this.hitPoints[this.side] = 0;
-      } else {
-        this.hitPoints[this.side] += damage;
+  dealDamage(damage: { [Side.Left]: number; [Side.Right]: number }) {
+    if (damage[Side.Left] > 0) {
+      this.hitPoints[Side.Left] -= damage[Side.Left];
+    }
+    if (damage[Side.Right] > 0) {
+      this.hitPoints[Side.Right] -= damage[Side.Right];
+    }
+  }
+
+  clearTable() {
+    this.table = {
+      [Side.Left]: {
+        index: -1,
+        card: null,
+      },
+      [Side.Right]: {
+        index: -1,
+        card: null,
+      },
+    };
+  }
+
+  dealCards() {
+    Object.values(this.players).forEach((player) => {
+      if (player) {
+        player.supplementHand(this.table[player.side!].index);
       }
-    } else {
-      if (this.hitPoints[this.opposingSide] < damage) {
-        this.hitPoints[this.opposingSide] = 0;
-      } else {
-        this.hitPoints[this.opposingSide] -= damage;
-      }
+    });
+  }
+
+  play(side: Side, card: { index: number; card: CardType }) {
+    // Set card on the table, your side, face down
+    this.table[side] = card;
+
+    if (this.table[flipSide(side)].index === -1) {
+      return;
     }
 
-    this.players[this.opposingSide]?.hurt(damage, message);
-  }
+    const { [Side.Left]: leftCard, [Side.Right]: rightCard } = this.table;
 
-  endTurn() {
-    this.side = this.opposingSide;
+    const { damage, message } = resolveAttack(
+      leftCard!.card!,
+      rightCard!.card!
+    );
 
-    // Add new timer
-    this.timer = setTimeout(() => {
-      logger.info("TIMER RAN OUT", { timer: this.timer });
-      this.pass();
-    }, 10000);
-  }
+    this.dealDamage(damage);
 
-  get topCard() {
-    const stack = this.stack[this.opposingSide];
-    const lastIndex = stack.length - 1;
-    return stack[lastIndex];
-  }
+    this.dealCards();
 
-  pass() {
-    clearTimeout(this.timer);
-    logger.info("Cleared timeout", { timer: this.timer });
-
-    this.dealDamage(0, "Timeout!");
-
-    this.endTurn();
-
-    this.trigger("afterPlay", this.isGameOver, this);
-  }
-
-  play(card: CardType) {
-    clearTimeout(this.timer);
-
-    const [damage, endTurn, message] = resolveDamage(card, this.topCard);
-
-    logger.info("Match:play", { damage, endTurn, message });
-
-    // replace the top card
-    this.stack[this.side].push(card);
-
-    logger.info("Match:play", { card });
-
-    this.dealDamage(damage, message);
-
-    if (endTurn) {
-      this.endTurn();
-    }
-
-    this.trigger("afterPlay", this.isGameOver, this);
+    this.trigger("afterPlay", this, damage, message);
 
     if (this.isGameOver) {
       this.gameOver();
     }
+
+    this.clearTable();
+  }
+
+  get cardsOnTable() {
+    return Object.entries(this.table).reduce((table, [side, tableItem]) => {
+      return {
+        ...table,
+        [side]: tableItem.card,
+      };
+    }, {});
   }
 
   get isGameOver() {
     return this.hitPoints[Side.Left] <= 0 || this.hitPoints[Side.Right] <= 0;
   }
 
-  private trigger(event: string, ...params: any[]) {
-    this.events[event].forEach((callback) => {
-      callback(...params);
-    });
-  }
-
-  on(event: string, callback: Function) {
-    this.events[event] = [...(this.events[event] || []), callback];
+  private trigger(event: keyof typeof playerHandlers, ...args: any[]) {
+    for (let side in this.players) {
+      const player = this.players[side as unknown as Side];
+      if (player) {
+        // @ts-ignore
+        playerHandlers[event](player, ...args);
+      }
+    }
   }
 
   join(player: Player): Side | undefined {
@@ -128,17 +131,13 @@ class Match {
     }
   }
 
-  leave(socketId: string) {
-    // Clear the timer if the player leaves
-    clearTimeout(this.timer);
+  leave(side: Side) {
+    this.players[side] = null;
 
-    (Object.keys(this.players) as unknown as [Side]).forEach((side) => {
-      const player = this.players[side as unknown as Side];
-      if (player) {
-        // Remove the player from the match
-        this.players[side] = null;
-      }
-    });
+    if (!this.hasPlayers) {
+      this.game.removeMatch(this.id);
+      logger.info("Match removed", { matchId: this.id });
+    }
   }
 
   get winner(): Side {
@@ -153,10 +152,17 @@ class Match {
   }
 
   gameOver() {
-    clearTimeout(this.timer);
-
     this.players[this.winner]?.win();
     this.players[this.loser]?.lose();
+
+    this.resetPlayers();
+  }
+
+  resetPlayers() {
+    this.players = {
+      [Side.Left]: null,
+      [Side.Right]: null,
+    };
   }
 }
 

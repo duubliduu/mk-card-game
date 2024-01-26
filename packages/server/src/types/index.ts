@@ -1,4 +1,6 @@
-export enum Stance {
+import exp from "constants";
+
+export enum Guard {
   Low,
   Mid,
   High,
@@ -6,8 +8,11 @@ export enum Stance {
 }
 
 export enum Reach {
+  None,
+  Guard,
   Grapple,
   Punch,
+  Knee,
   Kick,
   FireBall,
 }
@@ -18,20 +23,19 @@ export enum Weight {
   Heavy,
 }
 
-export enum Pressure {
-  Defensive = -1,
-  Controlled,
-  Aggressive,
-}
-
 export enum Side {
   Left,
   Right,
 }
 
 export type CardType = {
-  stance: Stance;
+  image: string;
+  move?: number;
+  guard: Guard;
   reach: Reach;
   weight: Weight;
-  pressure: Pressure;
 };
+
+export enum Room {
+  QUEUE = "queue",
+}
