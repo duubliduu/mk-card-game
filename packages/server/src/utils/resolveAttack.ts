@@ -191,8 +191,10 @@ export const resolveAttack = (
     if (oneIsAirAttack) {
       return <Result>{
         damage: {
-          [oneIsAirAttack[0]]: calculateDamage(oneIsAirAttack[1]),
-          [Number(!oneIsAirAttack[0]) as Side]: 0,
+          [oneIsAirAttack[0]]: 0,
+          [Number(!oneIsAirAttack[0]) as Side]: calculateDamage(
+            oneIsAirAttack[1]
+          ),
         },
         message: "Air attack!",
       };
@@ -203,8 +205,8 @@ export const resolveAttack = (
     if (onIsAntiAir) {
       return <Result>{
         damage: {
-          [onIsAntiAir[0]]: calculateDamage(onIsAntiAir[1]),
-          [Number(!onIsAntiAir[0]) as Side]: 0,
+          [onIsAntiAir[0]]: 0,
+          [Number(!onIsAntiAir[0]) as Side]: calculateDamage(onIsAntiAir[1]),
         },
         message: "Antiair!",
       };

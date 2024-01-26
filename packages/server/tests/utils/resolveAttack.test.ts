@@ -99,8 +99,8 @@ describe("resolveDamage", () => {
       it("should have advantage", () => {
         expect(resolveAttack(kickAirLight, kickMidLight)).toEqual({
           damage: {
-            [Side.Left]: 20,
-            [Side.Right]: 0,
+            [Side.Left]: 0,
+            [Side.Right]: 20,
           },
           message: "Air attack!",
         });
@@ -111,8 +111,8 @@ describe("resolveDamage", () => {
       it("should be antiaired", () => {
         expect(resolveAttack(kickAirLight, kickHighLight)).toEqual({
           damage: {
-            [Side.Left]: 0,
-            [Side.Right]: 20,
+            [Side.Left]: 20,
+            [Side.Right]: 0,
           },
           message: "Antiair!",
         });
