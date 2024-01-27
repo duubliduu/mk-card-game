@@ -122,13 +122,15 @@ class Match {
   }
 
   join(player: Player): Side | undefined {
-    for (let side: Side = 0; side < 2; side++) {
-      if (!this.players[side]) {
-        this.players[side] = player;
-        logger.info("Player joined the match", { side, match: this.id });
-        return side;
-      }
+    if (this.players[Side.Left] === null) {
+      this.players[Side.Left] = player;
+      return Side.Left;
     }
+    if (this.players[Side.Right] === null) {
+      this.players[Side.Right] = player;
+      return Side.Right;
+    }
+    return undefined;
   }
 
   leave(side: Side) {

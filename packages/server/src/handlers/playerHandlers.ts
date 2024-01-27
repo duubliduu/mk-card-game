@@ -1,6 +1,6 @@
 import Player from "../controllers/Player";
 import logger from "../utils/logger";
-import { CardType, Room, Side } from "../types";
+import { CardType, Room } from "../types";
 import { HitPoints } from "../types/player";
 import Match from "../controllers/Match";
 
@@ -20,13 +20,6 @@ export const play = (player: Player, cardIndex: number) => {
   };
 
   player.emit("table", tableUpdate);
-  player.emit("pop", {
-    damage: {
-      [Side.Left]: 0,
-      [Side.Right]: 0,
-    },
-    message: "",
-  });
 
   player.match.play(player.side!, {
     index: cardIndex,
@@ -108,12 +101,7 @@ export const sendChallenge = (player: Player, opponentId: string) => {
 export const disconnect = (player: Player) => {
   logger.info("Player disconnected", { playerId: player.id });
 
-  if (player.match && player.side) {
-    player.match.players[player.side] = null;
-
-    if (player.match.id in player.game.matches)
-      player.game.removeMatch(player.match.id);
-  }
+  player.handleLeaveMatch();
 
   player.to(Room.QUEUE, "remove", player.id);
 

@@ -32,7 +32,10 @@ class Player extends SocketController {
   }
 
   get opposingSide(): Side {
-    return Number(!this.side);
+    if (this.side === Side.Left) {
+      return Side.Right;
+    }
+    return Side.Left;
   }
 
   get opponent(): Player | null {
