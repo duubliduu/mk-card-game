@@ -45,11 +45,12 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
   const [progress, setProgress] = useState<[number, number]>([0, 0]);
 
   const loadImages = (images: string[]) => {
+    setProgress([0, 0]);
     images.forEach((image) => {
       const imageElement = new Image();
       imageElement.src = `/images/cards/${image}`;
       imageElement.onload = () => {
-        setProgress(([loaded, all]) => [loaded + 1, images.length]);
+        setProgress(([loaded]) => [loaded + 1, images.length]);
       };
     });
   };
@@ -70,14 +71,12 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
       );
     },
     challenge: (payload: { matchId: string; name: string }) => {
-      console.log("challenge", payload);
       setChallenges((state) => ({
         ...state,
         [payload.matchId]: payload.name,
       }));
     },
     leave: (matchId: string) => {
-      console.log("leave", matchId);
       setChallenges((state) => {
         // Remove the challenge from the list
         const { [matchId]: _, ...rest } = state;
