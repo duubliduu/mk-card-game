@@ -69,6 +69,18 @@ const isStanding = (card: CardType) => {
   return card.guard === Guard.Mid || card.guard === Guard.High;
 };
 
+const isOneMid = (
+  leftCard: CardType,
+  rightCard: CardType
+): [Side, CardType] | undefined => {
+  if (leftCard.guard === Guard.Mid && rightCard.guard !== Guard.Mid) {
+    return [Side.Right, leftCard];
+  }
+  if (rightCard.guard === Guard.Mid && leftCard.guard !== Guard.Mid) {
+    return [Side.Left, rightCard];
+  }
+};
+
 const inReach = (attackingCard: CardType, defendingCard: CardType) => {
   return attackingCard.reach >= defendingCard.reach;
 };
@@ -94,6 +106,7 @@ const whichHasAdvantage = (leftCard: CardType, rightCard: CardType) => {
   } else if (rightCard.reach > leftCard.reach) {
     return rightCard;
   }
+
   return null;
 };
 
@@ -209,6 +222,18 @@ export const resolveAttack = (
           [Number(!onIsAntiAir[0]) as Side]: calculateDamage(onIsAntiAir[1]),
         },
         message: "Antiair!",
+      };
+    }
+
+    const [MidSide, MidCard] = isOneMid(leftCard, rightCard) ?? [];
+
+    if (MidCard && MidSide !== undefined) {
+      return <Result>{
+        damage: {
+          [MidSide]: calculateDamage(MidCard),
+          [Number(!MidSide)]: 0,
+        },
+        message: "Mid has longer reach!",
       };
     }
 

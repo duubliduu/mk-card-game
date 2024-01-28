@@ -143,6 +143,36 @@ describe("resolveDamage", () => {
       });
     });
   });
+
+  describe("Mid attack", () => {
+    it("should beat high", () => {
+      expect(resolveAttack(kickMidLight, kickHighLight)).toEqual({
+        damage: {
+          [Side.Left]: 0,
+          [Side.Right]: 20,
+        },
+        message: "Mid has longer reach!",
+      });
+    });
+    it("should beat low", () => {
+      expect(resolveAttack(kickMidLight, kickLowLight)).toEqual({
+        damage: {
+          [Side.Left]: 0,
+          [Side.Right]: 20,
+        },
+        message: "Mid has longer reach!",
+      });
+    });
+    it("should lose to air", () => {
+      expect(resolveAttack(kickMidLight, kickAirLight)).toEqual({
+        damage: {
+          [Side.Left]: 20,
+          [Side.Right]: 0,
+        },
+        message: "Air attack!",
+      });
+    });
+  });
 });
 
 describe("calculateDamage", () => {
