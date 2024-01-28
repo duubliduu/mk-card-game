@@ -7,7 +7,6 @@ import {
 } from "react";
 import useSocket from "../hooks/useSocket";
 import { useDebounce } from "usehooks-ts";
-import { isCursorAtEnd } from "@testing-library/user-event/dist/utils";
 
 type QueueItem = { id: string; name: string; inMatch: boolean };
 
