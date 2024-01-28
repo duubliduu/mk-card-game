@@ -104,7 +104,7 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
         challenges,
         name,
         setName,
-        progress: progress[1] > 0 ? (progress[1] / progress[0]) * 100 : 0,
+        progress: progress[1] > 0 ? (progress[0] / progress[1]) * 100 : 0,
       }}
     >
       {children}

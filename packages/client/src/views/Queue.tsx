@@ -47,7 +47,7 @@ const Queue: FunctionComponent = () => {
     <div className="container px-4 py-4 max-w-content">
       <header className="pb-2 flex justify-between">
         <h1 className="font-bold text-2xl pb-2 text-red-700">
-          Combat Cards POC {progress < 100 && `(${progress.toFixed()}%)`}
+          Combat Cards POC {`(${progress.toFixed()}%)`}
         </h1>
         <pre>{id}</pre>
       </header>
