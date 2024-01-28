@@ -96,6 +96,8 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
     }
   }, [emit, debouncedValue]);
 
+  const [imagesLoaded, allImages] = progress;
+
   return (
     <QueueContext.Provider
       value={{
@@ -104,7 +106,7 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
         challenges,
         name,
         setName,
-        progress: progress[1] > 0 ? (progress[0] / progress[1]) * 100 : 0,
+        progress: allImages > 0 ? (imagesLoaded / allImages) * 100 : 0,
       }}
     >
       {children}

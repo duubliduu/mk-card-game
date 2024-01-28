@@ -3,7 +3,7 @@ import useDragging from "../hooks/useDragging";
 
 type CardProps = {
   image: string;
-  onDrop: () => void;
+  onDrop?: <T extends Event>(event: T) => void;
   onDrag?: <T extends Event>(event: T) => void;
   selected?: boolean;
   flip?: boolean;
@@ -27,14 +27,15 @@ const Card: FunctionComponent<CardProps> = ({
   });
 
   return (
-    <article
-      style={{ transform, width: "200px" }}
-      className={`rounded aspect-portrait bg-slate-200`}
-    >
+    <article className={`rounded aspect-portrait`}>
       <div
         ref={cardRef}
-        className="rounded aspect-portrait bg-white p-2"
-        style={{ visibility: selected ? "hidden" : "visible", width: "200px" }}
+        className="rounded aspect-portrait bg-white p-2 drop-shadow-md"
+        style={{
+          display: selected ? "none" : "",
+          width: "200px",
+          transform,
+        }}
       >
         <div className="rounded aspect-portrait p-2 border border-slate-600">
           <img

@@ -34,20 +34,25 @@ function Match() {
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
 
   const dropSiteRef = React.useRef<HTMLDivElement>(null);
+  const [isPlayed, setIsPlayed] = useState(false);
+  const [isLockedIn, setIsLockedIn] = useState(false);
 
   useSocket({
     message: (message: string) => console.log("message", message),
     hand: (payload: CardType[]) => {
       console.log("hand", payload);
-      setSelectedIndex(-1);
       setCards([...payload]);
     },
     table: (payload: any) => {
       console.log("table", payload);
+      setIsPlayed(false);
       setTable(payload);
     },
     play: (payload: any) => {
       console.log("play", payload);
+      setIsPlayed(true);
+      setIsLockedIn(false);
+      setSelectedIndex(-1);
       setTable(payload);
     },
     hitPoints: setHitPoints,
@@ -136,12 +141,31 @@ function Match() {
     }
   };
 
-  const handleDrop = (index: number) => {
-    // :hand_on_mouth_laughing
-    if (dropSiteRef.current?.classList.contains("border-gray-300")) {
+  const handleDrop = <T extends Event>(event: T, index?: number) => {
+    const [x, y] = getClientCoordinates(event);
+
+    if (isOverDropSite(x, y)) {
+      if (index === undefined) return;
       setSelectedIndex(index);
-      emit("play", index);
+      setTable((state) => ({
+        ...state,
+        [side]: cards[index],
+        [Number(!side) as Side]: null,
+      }));
+      setIsPlayed(false);
+    } else {
+      setSelectedIndex(-1);
+      setTable((state) => ({
+        ...state,
+        [side]: null,
+      }));
+      setIsPlayed(false);
     }
+  };
+
+  const handlePlay = () => {
+    setIsLockedIn(true);
+    emit("play", selectedIndex);
   };
 
   const handleExit = () => {
@@ -167,9 +191,6 @@ function Match() {
   return (
     <div className="bg-gray-100 h-screen select-none">
       <div className="container mx-auto py-4 px-4">
-        <div className="pb-4 flex justify-between">
-          <button onClick={handleExit}>Exit</button>
-        </div>
         <section className="flex justify-between flex-row">
           <div className="w-1/2 relative">
             <div
@@ -209,7 +230,10 @@ function Match() {
             <div className="pt-4 text-sm">{opponent.name || opponent.id}</div>
           </div>
         </section>
-        <div className="py-4">
+        <div className="pb-4 flex justify-between">
+          <button onClick={handleExit}>Exit</button>
+        </div>
+        <div className="py-4 relative">
           <section>
             {hasEnded && <div>The match has ended</div>}
             {isReady && !hasEnded && (
@@ -218,9 +242,18 @@ function Match() {
                   className="flex h-64 justify-center w-full border-4"
                   ref={dropSiteRef}
                 >
-                  <div className="rounded aspect-portrait relative">
+                  <div className="aspect-portrait relative">
                     {leftCard && (
-                      <img alt="" src={`/images/cards/${leftCard.image}`} />
+                      <>
+                        {isPlayed ? (
+                          <img alt="" src={`/images/cards/${leftCard.image}`} />
+                        ) : (
+                          <Card
+                            image={leftCard.image}
+                            onDrop={(event) => handleDrop(event)}
+                          />
+                        )}
+                      </>
                     )}
                     <div
                       className="absolute w-full text-center"
@@ -231,14 +264,18 @@ function Match() {
                       {!!leftDamage && leftDamage}
                     </div>
                   </div>
-                  <div className="rounded aspect-portrait relative">
+                  <div className="aspect-portrait relative">
                     {rightCard && (
                       <>
-                        <img
-                          className="transform -scale-x-100"
-                          alt=""
-                          src={`/images/cards/${rightCard.image}`}
-                        />
+                        {isPlayed ? (
+                          <img
+                            className="transform -scale-x-100"
+                            alt=""
+                            src={`/images/cards/${rightCard.image}`}
+                          />
+                        ) : (
+                          <Card image={rightCard.image} flip />
+                        )}
                         <div
                           className="absolute w-full text-center"
                           style={{
@@ -255,15 +292,28 @@ function Match() {
               </div>
             )}
           </section>
+          {selectedIndex > -1 && (
+            <div className="flex justify-center">
+              <button
+                disabled={isLockedIn}
+                className="absolute top-1/3 bg-white px-6 py-4 rounded cursor-pointer drop-shadow-lg"
+                onClick={handlePlay}
+              >
+                {isLockedIn ? "Ready!" : "Play"}
+              </button>
+            </div>
+          )}
         </div>
         <section
-          className="flex justify-around"
+          className="flex justify-center"
           style={{ opacity: isReady === true ? 1 : 0.5 }}
         >
           {cards.map((card, cardIndex) => (
             <Card
               key={cardIndex}
-              onDrop={() => handleDrop(cardIndex)}
+              onDrop={<T extends Event>(event: T) =>
+                handleDrop<T>(event, cardIndex)
+              }
               onDrag={handleDrag<Event>}
               selected={cardIndex === selectedIndex}
               image={card.image}

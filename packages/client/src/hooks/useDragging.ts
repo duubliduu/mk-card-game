@@ -5,7 +5,7 @@ type Props = {
   ref: RefObject<HTMLElement>;
   onMouseDown?: <T extends Event>(event: T) => void;
   onMouseMove?: <T extends Event>(event: T) => void;
-  onMouseUp?: () => void;
+  onMouseUp?: <T extends Event>(event: T) => void;
 };
 
 const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
@@ -46,15 +46,18 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
     [updateCardPosition, onMouseMove]
   );
 
-  const handleMouseUp = useCallback(() => {
-    if (!isDragging.current) return;
+  const handleMouseUp = useCallback(
+    <T extends Event>(event: T) => {
+      if (!isDragging.current) return;
 
-    isDragging.current = false;
+      isDragging.current = false;
 
-    ref.current!.style.position = "static";
+      ref.current!.style.position = "static";
 
-    if (typeof onMouseUp === "function") onMouseUp();
-  }, [onMouseUp, ref]);
+      if (typeof onMouseUp === "function") onMouseUp(event);
+    },
+    [onMouseUp, ref]
+  );
 
   useEffect(() => {
     if (ref.current === null) return;
@@ -64,20 +67,20 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
     // mouse
     localRef.addEventListener("mousedown", handleMouseDown<MouseEvent>);
     document.addEventListener("mousemove", handleMouseMove<MouseEvent>);
-    document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("mouseup", handleMouseUp<MouseEvent>);
     // touch
     localRef.addEventListener("touchstart", handleMouseDown<TouchEvent>);
     document.addEventListener("touchmove", handleMouseMove<TouchEvent>);
-    document.addEventListener("touchend", handleMouseUp);
+    document.addEventListener("touchend", handleMouseUp<TouchEvent>);
 
     return () => {
       localRef.removeEventListener("mousedown", handleMouseDown<MouseEvent>);
       document.removeEventListener("mousemove", handleMouseMove<MouseEvent>);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseup", handleMouseUp<MouseEvent>);
 
       localRef.removeEventListener("touchstart", handleMouseDown<TouchEvent>);
       document.removeEventListener("touchmove", handleMouseMove<TouchEvent>);
-      document.removeEventListener("touchend", handleMouseUp);
+      document.removeEventListener("touchend", handleMouseUp<TouchEvent>);
     };
   }, [ref, handleMouseDown, handleMouseMove, handleMouseUp]);
 

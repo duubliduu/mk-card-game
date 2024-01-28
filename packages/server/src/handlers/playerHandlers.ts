@@ -116,6 +116,6 @@ export const afterPlay = (
 ) => {
   player.emit("hand", player.hand);
   player.emit("pop", { damage, message });
-  player.emit("table", match.cardsOnTable);
+  player.emit("play", match.cardsOnTable);
   player.emit("hitPoints", match.hitPoints);
 };
