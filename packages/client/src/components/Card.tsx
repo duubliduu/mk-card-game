@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useRef } from "react";
+import React, { FunctionComponent, useEffect, useRef } from "react";
 import useDragging from "../hooks/useDragging";
 
 type CardProps = {
@@ -18,7 +18,11 @@ const Card: FunctionComponent<CardProps> = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const transform = ""; //`rotate(${Math.random() * 2 - 1}deg)`;
+  useEffect(() => {
+    if (cardRef.current) {
+      cardRef.current!.style.transform = `rotate(${Math.random() * 2 - 1}deg)`; // Random rotation
+    }
+  }, [cardRef, image]);
 
   useDragging({
     ref: cardRef,
@@ -34,7 +38,6 @@ const Card: FunctionComponent<CardProps> = ({
         style={{
           display: selected ? "none" : "",
           width: "200px",
-          transform,
         }}
       >
         <div className="rounded aspect-portrait p-2 border border-slate-600">
