@@ -7,6 +7,7 @@ import {
 } from "react";
 import useSocket from "../hooks/useSocket";
 import { useDebounce } from "usehooks-ts";
+import { isCursorAtEnd } from "@testing-library/user-event/dist/utils";
 
 type QueueItem = { id: string; name: string; inMatch: boolean };
 
@@ -16,12 +17,14 @@ type QueueContextType = {
   id?: string;
   name?: string;
   setName: (name: string) => void;
+  progress: number;
 };
 
 const defaultValues = {
   queue: [],
   challenges: {},
   name: undefined,
+  progress: 0,
   setName: () => {}, // IDE doesn't understand this method is actually in use. Don't remove
 };
 
@@ -40,9 +43,21 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
   const [name, setName] = useState<QueueContextType["name"]>(
     defaultValues.name
   );
+  const [progress, setProgress] = useState<[number, number]>([0, 0]);
+
+  const loadImages = (images: string[]) => {
+    images.forEach((image) => {
+      const imageElement = new Image();
+      imageElement.src = `/images/cards/${image}`;
+      imageElement.onload = () => {
+        setProgress(([loaded, all]) => [loaded + 1, images.length]);
+      };
+    });
+  };
 
   const emit = useSocket({
     connected: setId,
+    images: loadImages,
     queue: setQueue,
     add: (payload: QueueItem) => {
       setQueue((state) => [...state, payload]);
@@ -90,6 +105,7 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
         challenges,
         name,
         setName,
+        progress: progress[1] > 0 ? (progress[1] / progress[0]) * 100 : 0,
       }}
     >
       {children}

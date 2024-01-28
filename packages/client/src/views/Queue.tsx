@@ -9,7 +9,8 @@ import useSocket from "../hooks/useSocket";
 import Challenge from "../components/Challenge";
 
 const Queue: FunctionComponent = () => {
-  const { id, queue, challenges, name, setName } = useContext(QueueContext);
+  const { id, queue, challenges, name, setName, progress } =
+    useContext(QueueContext);
 
   const emit = useSocket({
     startMatch: (matchId: string) => {
@@ -46,7 +47,7 @@ const Queue: FunctionComponent = () => {
     <div className="container px-4 py-4 max-w-content">
       <header className="pb-2 flex justify-between">
         <h1 className="font-bold text-2xl pb-2 text-red-700">
-          Combat Cards POC
+          Combat Cards POC {progress < 100 && `(${progress.toFixed()}%)`}
         </h1>
         <pre>{id}</pre>
       </header>

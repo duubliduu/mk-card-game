@@ -40,6 +40,10 @@ class Deck {
     this.playedCards = [];
     this.shuffle();
   }
+
+  get images(): string[] {
+    return this.cards.map((card) => card.image);
+  }
 }
 
 export default Deck;

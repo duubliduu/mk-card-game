@@ -58,6 +58,7 @@ class Player extends SocketController {
 
     this.emit("connected", socket.id);
     this.emit(Room.QUEUE, this.game.connectedPlayers);
+    this.emit("images", this.deck.images);
 
     // Send the connected user to others
     this.broadcastTo(Room.QUEUE, "add", {
