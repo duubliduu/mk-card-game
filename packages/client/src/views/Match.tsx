@@ -133,7 +133,6 @@ function Match() {
     if (!dropSiteRef.current) return;
 
     const [x, y] = getClientCoordinates(event);
-
     if (isOverDropSite(x, y)) {
       dropSiteRef.current.classList.add("border-gray-300");
     } else {
@@ -141,10 +140,10 @@ function Match() {
     }
   };
 
-  const handleDrop = <T extends Event>(event: T, index?: number) => {
-    const [x, y] = getClientCoordinates(event);
+  const handleDrop = (index?: number) => {
+    if (!dropSiteRef.current) return;
 
-    if (isOverDropSite(x, y)) {
+    if (dropSiteRef.current.classList.contains("border-gray-300")) {
       if (index === undefined) return;
       setSelectedIndex(index);
       setTable((state) => ({
@@ -250,7 +249,8 @@ function Match() {
                         ) : (
                           <Card
                             image={leftCard.image}
-                            onDrop={(event) => handleDrop(event)}
+                            onDrop={() => handleDrop()}
+                            onDrag={handleDrag}
                           />
                         )}
                       </>
@@ -311,9 +311,7 @@ function Match() {
           {cards.map((card, cardIndex) => (
             <Card
               key={cardIndex}
-              onDrop={<T extends Event>(event: T) =>
-                handleDrop<T>(event, cardIndex)
-              }
+              onDrop={() => handleDrop(cardIndex)}
               onDrag={handleDrag<Event>}
               selected={cardIndex === selectedIndex}
               image={card.image}
