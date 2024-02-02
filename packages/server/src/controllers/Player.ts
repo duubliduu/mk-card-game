@@ -88,9 +88,10 @@ class Player extends SocketController {
     return JSON.stringify(rest);
   }
 
-  findCardByIndex(cardIndex: number): CardType {
-    const { ...cardToPlay } = this.hand[cardIndex] as CardType;
-    return cardToPlay;
+  findCardByIndex(cardIndices: number[]): CardType[] {
+    return cardIndices.map((cardIndex) => {
+      return this.hand[cardIndex];
+    });
   }
 
   supplementHand = (cardIndex: number) => {

@@ -1,324 +1,364 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Card from "../components/Card";
 import { useNavigate, useParams } from "react-router-dom";
-import { CardType, Side } from "../types";
-import useSocket from "../hooks/useSocket";
+import { MatchResult, Side } from "../types";
 import { QueueContext } from "../context/QueueContext";
-import { ModalContext } from "../context/ModalContext";
 import { getClientCoordinates } from "../utils/getClientCoordinates";
+import HitPoints from "../components/HitPoints";
+import { MatchContext } from "../context/MatchContext";
+import useAudio from "../hooks/useAudio";
+import Timer from "../components/Timer";
 
 function Match() {
   const { id, name } = useContext(QueueContext);
-  const { setContent, setOpen } = useContext(ModalContext);
-
-  const [opposingSide, setOpposingSide] = useState<Side>(Side.Right);
-  const [table, setTable] = useState<{ [side in Side]: CardType | null }>({
-    [Side.Left]: null,
-    [Side.Right]: null,
-  });
-  const [cards, setCards] = useState<CardType[]>([]);
-  const [hitPoints, setHitPoints] = useState<{ [side in Side]: number }>({
-    [Side.Left]: 100,
-    [Side.Right]: 100,
-  });
-  const [side, setSide] = useState<Side>(Side.Left);
-  const [pops, setPops] = useState<{
-    damage: { [Side.Left]: number; [Side.Right]: number };
-    message: string;
-  }>();
-  const [isReady, setIsReady] = useState<boolean>();
-  const [opponent, setOpponent] = useState<
-    Partial<{ id: string; name: string }>
-  >({});
-  const [hasEnded, setHasEnded] = useState<boolean>(false);
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
-
-  const dropSiteRef = React.useRef<HTMLDivElement>(null);
-  const [isPlayed, setIsPlayed] = useState(false);
-  const [isLockedIn, setIsLockedIn] = useState(false);
-
-  useSocket({
-    message: (message: string) => console.log("message", message),
-    hand: (payload: CardType[]) => {
-      console.log("hand", payload);
-      setCards([...payload]);
-    },
-    table: (payload: any) => {
-      console.log("table", payload);
-      setIsPlayed(false);
-      setTable(payload);
-    },
-    play: (payload: any) => {
-      console.log("play", payload);
-      setIsPlayed(true);
-      setIsLockedIn(false);
-      setSelectedIndex(-1);
-      setTable(payload);
-    },
-    hitPoints: setHitPoints,
-    pop: setPops,
-    side: setSide,
-    ready: setIsReady,
-    leave: () => setIsReady(false),
-    opponent: setOpponent,
-    exit: () => {
-      navigate("/");
-    },
-    disconnect: () => {
-      navigate("/");
-    },
-  });
-
-  const { id: matchId } = useParams();
-
-  const emit = useSocket({
-    gameOver: (gameState?: "win" | "lose") => {
-      setHasEnded(true);
-      if (gameState === "lose") {
-        setContent(
-          <div className="flex flex-col h-full justify-around items-center">
-            <h1 className="text-4xl">You Lose!</h1>
-            <button
-              className="rounded bg-red-700 text-white py-3 px-6 font-bold"
-              onClick={() => {
-                setOpen(false);
-                emit("leaveMatch");
-                navigate("/");
-              }}
-            >
-              OK
-            </button>
-          </div>
-        );
-        setOpen(true);
-      } else if (gameState === "win") {
-        setContent(
-          <div className="flex flex-col h-full justify-around items-center">
-            <h1 className="text-4xl">You win!</h1>
-            <button
-              className="rounded bg-red-700 text-white py-3 px-6 font-bold"
-              onClick={() => {
-                setOpen(false);
-                emit("leaveMatch");
-                navigate("/");
-              }}
-            >
-              OK
-            </button>
-          </div>
-        );
-        setOpen(true);
-      } else {
-        navigate("/");
-      }
-    },
-  });
+  const {
+    handlePlay,
+    handleExit,
+    selectedCards,
+    handleSelectCard,
+    handleDeselectCard,
+    hitPoints,
+    side,
+    pops,
+    opponent,
+    cards,
+    table,
+    isLockedIn,
+    isPlayed,
+    isReady,
+    handleJoinMatch,
+    cardsInHand,
+  } = useContext(MatchContext);
+  const dropAreaRef = useRef<HTMLDivElement>(null);
+  // @ts-ignore
+  const intervalRef = useRef<Timer>();
 
   const navigate = useNavigate();
 
-  const isOverDropSite = (x: number, y: number) => {
-    if (!dropSiteRef.current) return false;
+  const [result, setResult] = useState<number>(-1);
+  const [isDragging, setIsDragging] = useState(false);
 
-    const { top, left } = dropSiteRef.current.getBoundingClientRect();
+  const [playHitSound] = useAudio("/audio/hit.wav");
+  const [playHeavyHitSound] = useAudio("/audio/hit-2.wav");
+  const [playWhiffSound] = useAudio("/audio/whiff.mp3");
+  const [playBlockSound] = useAudio("/audio/block.mp3");
+
+  const isOverDropArea = (x: number, y: number) => {
+    if (!dropAreaRef.current) return false;
+
+    const { top, left } = dropAreaRef.current.getBoundingClientRect();
 
     return (
       x > left &&
       y > top &&
-      x < left + dropSiteRef.current.clientWidth &&
-      y < top + dropSiteRef.current.clientHeight
+      x < left + dropAreaRef.current.clientWidth &&
+      y < top + dropAreaRef.current.clientHeight
     );
   };
 
   const handleDrag = <T extends Event>(event: T) => {
-    if (!dropSiteRef.current) return;
+    if (!dropAreaRef.current) return;
+
+    setIsDragging(true);
 
     const [x, y] = getClientCoordinates(event);
-    if (isOverDropSite(x, y)) {
-      dropSiteRef.current.classList.add("border-gray-300");
+
+    if (isOverDropArea(x, y)) {
+      dropAreaRef.current.classList.add("border-gray-300");
     } else {
-      dropSiteRef.current.classList.remove("border-gray-300");
+      dropAreaRef.current.classList.remove("border-gray-300");
     }
   };
 
-  const handleDrop = (index?: number) => {
-    if (!dropSiteRef.current) return;
+  const handleDrop = (index: number) => {
+    if (!dropAreaRef.current) return;
 
-    if (dropSiteRef.current.classList.contains("border-gray-300")) {
-      if (index === undefined) return;
-      setSelectedIndex(index);
-      setTable((state) => ({
-        ...state,
-        [side]: cards[index],
-        [Number(!side) as Side]: null,
-      }));
-      setIsPlayed(false);
+    setIsDragging(false);
+
+    if (dropAreaRef.current.classList.contains("border-gray-300")) {
+      if (selectedCards.length >= 3) return;
+      handleSelectCard(index);
     } else {
-      setSelectedIndex(-1);
-      setTable((state) => ({
-        ...state,
-        [side]: null,
-      }));
-      setIsPlayed(false);
+      handleDeselectCard(index);
     }
   };
 
-  const handlePlay = () => {
-    setIsLockedIn(true);
-    emit("play", selectedIndex);
+  const handleDragStart = () => {
+    if (!dropAreaRef.current) return;
+    setIsDragging(true);
   };
 
-  const handleExit = () => {
-    emit("leaveMatch");
-    navigate("/");
-  };
+  const { id: matchId } = useParams();
 
   useEffect(() => {
     if (matchId) {
-      emit("joinMatch", matchId);
+      handleJoinMatch(matchId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchId]);
+
+  const results = [
+    {
+      gap: 0,
+      sound: "hit",
+      [Side.Left]: {
+        damage: 10,
+        image: "punch-high-light.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "guard-high.png",
+      },
+    },
+    {
+      gap: 2,
+      sound: "hit",
+      [Side.Left]: {
+        damage: 10,
+        image: "punch-mid-light.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "guard-high.png",
+      },
+    },
+    {
+      gap: 4,
+      sound: "hit-2",
+      [Side.Left]: {
+        damage: 10,
+        image: "punch-mid-heavy.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "guard-high.png",
+      },
+    },
+    {
+      gap: 6,
+      sound: "hit",
+      [Side.Left]: {
+        damage: 10,
+        image: "kick-low-light.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "guard-high.png",
+      },
+    },
+    {
+      gap: 15,
+      sound: "hit",
+      [Side.Left]: {
+        damage: 10,
+        image: "kick-mid-heavy.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "evade.png",
+      },
+    },
+    {
+      gap: 25,
+      sound: "hit-2",
+      [Side.Left]: {
+        damage: 10,
+        image: "kick-high-heavy-2.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "guard-mid.png",
+      },
+    },
+    {
+      gap: 25,
+      sound: "whiff",
+      [Side.Left]: {
+        damage: 10,
+        image: "advance.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "guard-high.png",
+      },
+    },
+    {
+      gap: 5,
+      sound: null,
+      [Side.Left]: {
+        damage: 10,
+        image: "guard-mid.png",
+      },
+      [Side.Right]: {
+        damage: 0,
+        image: "guard-mid.png",
+      },
+    },
+  ];
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setResult((result) => {
+        if (result + 1 > results.length - 1) {
+          return results.length - 1;
+        }
+        return result + 1;
+      });
+    }, 250);
+    return () => clearInterval(intervalRef.current);
   }, []);
 
   useEffect(() => {
-    setOpposingSide(Number(!side));
-  }, [side]);
+    if (result === -1) return;
+    switch (results[result].sound) {
+      case "hit":
+      case "hit-2":
+        playHitSound();
+        break;
+      case "whiff":
+        playWhiffSound();
+        break;
+      case "block":
+        playBlockSound();
+        break;
+    }
+  }, [result, playHitSound, playWhiffSound]);
 
-  const { [side]: leftCard, [Number(!side) as Side]: rightCard } = table;
-  const { damage, message } = pops ?? {};
-  const { [side]: leftDamage, [Number(!side) as Side]: rightDamage } =
-    damage ?? {};
+  const handleRestart = () => {
+    setResult(-1);
+  };
+
   return (
-    <div className="bg-gray-100 h-screen select-none">
-      <div className="container mx-auto py-4 px-4">
-        <section className="flex justify-between flex-row">
-          <div className="w-1/2 relative">
-            <div
-              className="h-4 absolute left-0"
-              style={{
-                background: "red",
-                transition: "width 1s",
-                width: `${hitPoints[side]}%`,
-              }}
-            />
-            <div
-              className="h-4 absolute left-0"
-              style={{
-                background: "green",
-                width: `${hitPoints[side]}%`,
-              }}
-            />
-            <div className="pt-4 text-sm">{name || id}</div>
-          </div>
-          <div className="px-2 italic">VS</div>
-          <div className="w-1/2 flex justify-end relative">
-            <div
-              className="h-4 absolute right-0"
-              style={{
-                background: "red",
-                transition: "width 1s",
-                width: `${hitPoints[opposingSide]}%`,
-              }}
-            />
-            <div
-              className="h-4 absolute right-0"
-              style={{
-                background: "green",
-                width: `${hitPoints[opposingSide]}%`,
-              }}
-            />
-            <div className="pt-4 text-sm">{opponent.name || opponent.id}</div>
-          </div>
-        </section>
-        <div className="pb-4 flex justify-between">
-          <button onClick={handleExit}>Exit</button>
-        </div>
-        <div className="py-4 relative">
-          <section>
-            {hasEnded && <div>The match has ended</div>}
-            {isReady && !hasEnded && (
-              <div className="relative flex justify-center">
-                <div
-                  className="flex h-64 justify-center w-full border-4"
-                  ref={dropSiteRef}
-                >
-                  <div className="aspect-portrait relative">
-                    {leftCard && (
-                      <>
-                        {isPlayed ? (
-                          <img alt="" src={`/images/cards/${leftCard.image}`} />
-                        ) : (
-                          <Card
-                            image={leftCard.image}
-                            onDrop={() => handleDrop()}
-                            onDrag={handleDrag}
-                          />
-                        )}
-                      </>
-                    )}
-                    <div
-                      className="absolute w-full text-center"
-                      style={{
-                        top: `${60 - 20 * (rightCard?.guard ?? 0)}px`,
-                      }}
-                    >
-                      {!!leftDamage && leftDamage}
-                    </div>
-                  </div>
-                  <div className="aspect-portrait relative">
-                    {rightCard && (
-                      <>
-                        {isPlayed ? (
-                          <img
-                            className="transform -scale-x-100"
-                            alt=""
-                            src={`/images/cards/${rightCard.image}`}
-                          />
-                        ) : (
-                          <Card image={rightCard.image} flip />
-                        )}
-                        <div
-                          className="absolute w-full text-center"
-                          style={{
-                            top: `${60 - 20 * (rightCard?.guard ?? 0)}px`,
-                          }}
-                        >
-                          {!!rightDamage && rightDamage}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="absolute top-0">{message}</div>
-                </div>
-              </div>
-            )}
-          </section>
-          {selectedIndex > -1 && (
-            <div className="flex justify-center">
-              <button
-                disabled={isLockedIn}
-                className="absolute top-1/3 bg-white px-6 py-4 rounded cursor-pointer drop-shadow-lg"
-                onClick={handlePlay}
-              >
-                {isLockedIn ? "Ready!" : "Play"}
-              </button>
-            </div>
-          )}
-        </div>
-        <section
-          className="flex justify-center"
-          style={{ opacity: isReady === true ? 1 : 0.5 }}
+    <div className="bg-gray-100 container h-screen select-none flex flex-col">
+      <section className="pt-2 px-2 flex justify-between">
+        <button
+          className="text-xs"
+          onClick={() => {
+            handleExit();
+            navigate("/");
+          }}
         >
-          {cards.map((card, cardIndex) => (
-            <Card
-              key={cardIndex}
-              onDrop={() => handleDrop(cardIndex)}
-              onDrag={handleDrag<Event>}
-              selected={cardIndex === selectedIndex}
-              image={card.image}
-            />
-          ))}
+          Exit
+        </button>
+        <button className="text-xs" disabled>
+          Settings
+        </button>
+      </section>
+      {id && (
+        <HitPoints
+          left={{
+            name: name || id,
+            hitPoints: hitPoints[side],
+          }}
+          right={{
+            name: opponent.name || opponent.id || "No Enemy",
+            hitPoints: opponent.side ? hitPoints[opponent.side] : 0,
+          }}
+        />
+      )}
+      {isReady && (
+        <section className="mb-8 mt-8 relative">
+          <div className="flex justify-center w-full border-2 aspect-video">
+            {results.map(
+              ({ gap, [Side.Left]: left, [Side.Right]: right }, index) => (
+                <div
+                  className="flex justify-center"
+                  onClick={handleRestart}
+                  key={index}
+                  style={{ display: result === index ? "flex" : "none" }}
+                >
+                  <div
+                    className="aspect-portrait"
+                    style={{ marginRight: `-${25 - gap}%` }}
+                  >
+                    <img alt="" src={`/images/cards/${left.image}`} />
+                  </div>
+                  <div
+                    className="aspect-portrait"
+                    style={{ marginLeft: `-${25 - gap}%` }}
+                  >
+                    <img
+                      className="transform -scale-x-100"
+                      alt=""
+                      src={`/images/cards/${right.image}`}
+                    />
+                  </div>
+                </div>
+              )
+            )}
+          </div>
         </section>
+      )}
+      {/* TABLE */}
+      <div
+        className="container flex mx-auto"
+        ref={dropAreaRef}
+        style={{ height: "280px" }}
+      >
+        {selectedCards.map((cardIndex) => (
+          <Card
+            key={cardIndex}
+            image={cards[cardIndex].image}
+            onDrop={() => handleDrop(cardIndex)}
+            onDrag={handleDrag}
+            onDragStart={() => {
+              handleDragStart();
+            }}
+            disabled={isLockedIn}
+            weight={cards[cardIndex].weight}
+          />
+        ))}
+        {results.length === 0 && selectedCards.length === 0 && (
+          <div className="absolute w-full text-center" style={{ top: "30%" }}>
+            Drag your best three cards here!
+          </div>
+        )}
+        {!isDragging && !isLockedIn && selectedCards.length > 2 && (
+          <div
+            className="absolute w-full flex justify-center z-20"
+            style={{
+              top: "26%",
+            }}
+          >
+            <button
+              disabled={isLockedIn}
+              className="bg-white px-6 py-4 rounded cursor-pointer drop-shadow-lg"
+              onClick={handlePlay}
+            >
+              Fight!
+            </button>
+          </div>
+        )}
+        {isLockedIn && (
+          <div
+            className="absolute w-full text-center py-4"
+            style={{
+              top: "26%",
+              background:
+                "repeating-linear-gradient(-45deg, #ededed 0%, #ededed 1%, #fff 1%, #fff 4%)",
+            }}
+          >
+            Waiting for opponent to play...
+          </div>
+        )}
       </div>
+      {/* HAND */}
+      <section
+        className="container mt-4 flex mx-auto"
+        style={{ width: "320px" }}
+      >
+        {cardsInHand.map((cardIndex, index) => (
+          <Card
+            key={cardIndex}
+            onDrop={() => handleDrop(cardIndex)}
+            onDrag={handleDrag}
+            onDragStart={handleDragStart}
+            image={cards[cardIndex].image}
+            rotation={(index - 2) * 4}
+            weight={cards[cardIndex].weight}
+          />
+        ))}
+      </section>
     </div>
   );
 }

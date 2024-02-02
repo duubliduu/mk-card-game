@@ -19,14 +19,14 @@ class Match {
     [Side.Right]: null,
   };
   // Cards on the table
-  public table: { [side in Side]: { index: number; card: CardType | null } } = {
+  public table: { [side in Side]: { index: number[]; card: CardType[] } } = {
     [Side.Left]: {
-      index: -1,
-      card: null,
+      index: [],
+      card: [],
     },
     [Side.Right]: {
-      index: -1,
-      card: null,
+      index: [],
+      card: [],
     },
   };
 
@@ -52,50 +52,68 @@ class Match {
   clearTable() {
     this.table = {
       [Side.Left]: {
-        index: -1,
-        card: null,
+        index: [],
+        card: [],
       },
       [Side.Right]: {
-        index: -1,
-        card: null,
+        index: [],
+        card: [],
       },
     };
   }
 
-  dealCards() {
+  replacePlayedCards() {
     Object.values(this.players).forEach((player) => {
-      if (player) {
-        player.supplementHand(this.table[player.side!].index);
+      if (player && player.side) {
+        this.table[player.side].index.forEach((index) => {
+          player.supplementHand(index);
+        });
       }
     });
   }
 
-  play(side: Side, card: { index: number; card: CardType }) {
-    // Set card on the table, your side, face down
-    this.table[side] = card;
+  resolveAttacks() {
+    const { [Side.Left]: leftCard, [Side.Right]: rightCard } = this.table;
 
-    if (this.table[flipSide(side)].index === -1) {
+    const results = [];
+
+    for (let i = 0; i < 3; i++) {
+      const { damage, message } = resolveAttack(
+        leftCard.card[i],
+        rightCard.card[i]
+      );
+      results.push({ damage, message });
+    }
+
+    return results;
+  }
+
+  play(side: Side, indices: number[]) {
+    // Set card on the table, your side, face down
+    this.table[side] = {
+      index: indices,
+      card: this.players[side]!.findCardByIndex(indices),
+    };
+
+    if (this.table[flipSide(side)].index.length === 0) {
       return;
     }
 
-    const { [Side.Left]: leftCard, [Side.Right]: rightCard } = this.table;
+    const results = this.resolveAttacks();
 
-    const { damage, message } = resolveAttack(
-      leftCard!.card!,
-      rightCard!.card!
-    );
+    results.forEach(({ damage }) => {
+      this.dealDamage(damage);
+    });
 
-    this.dealDamage(damage);
+    this.replacePlayedCards();
 
-    this.dealCards();
+    this.trigger("afterPlay", this, results);
 
-    this.trigger("afterPlay", this, damage, message);
+    this.clearTable();
 
     if (this.isGameOver) {
       this.gameOver();
     }
-
-    this.clearTable();
   }
 
   get cardsOnTable() {

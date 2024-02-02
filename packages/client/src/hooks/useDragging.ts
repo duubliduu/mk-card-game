@@ -10,28 +10,40 @@ type Props = {
 
 const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
   const isDragging = useRef(false);
+  const offset = useRef({ x: 0, y: 0 });
+  const isEnabled = useRef(false);
 
   const updateCardPosition = useCallback(
     (x: number, y: number) => {
+      if (!ref.current) return;
       // TODO: relative to width nad height
-      ref.current!.style.top = `${y - 100}px`;
-      ref.current!.style.left = `${x - 100}px`;
+      ref.current.style.top = `${y + offset.current.y}px`;
+      ref.current.style.left = `${x + offset.current.x}px`;
     },
-    [ref]
+    [ref, offset]
   );
 
   const handleMouseDown = useCallback(
     <T extends Event>(event: T) => {
       event.preventDefault();
-      ref.current!.style.position = "absolute";
-      isDragging.current = true;
+      if (!ref.current) return;
+      if (!isEnabled.current) return;
 
       const [x, y] = getClientCoordinates<T>(event);
+      const { left, top } = ref.current.getBoundingClientRect();
+
+      ref.current.style.position = "absolute";
+      //ref.current.style.zIndex = "99999";
+
+      isDragging.current = true;
+
+      offset.current = { x: left - x, y: top - y };
+
       updateCardPosition(x, y);
 
       if (typeof onMouseDown === "function") onMouseDown<T>(event);
     },
-    [onMouseDown, ref, updateCardPosition]
+    [onMouseDown, ref, updateCardPosition, offset]
   );
 
   const handleMouseMove = useCallback(
@@ -49,6 +61,8 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
   const handleMouseUp = useCallback(
     <T extends Event>(event: T) => {
       if (!isDragging.current) return;
+
+      offset.current = { x: 0, y: 0 };
 
       isDragging.current = false;
 
@@ -84,7 +98,7 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
     };
   }, [ref, handleMouseDown, handleMouseMove, handleMouseUp]);
 
-  return isDragging;
+  return [isDragging, isEnabled];
 };
 
 export default useDragging;

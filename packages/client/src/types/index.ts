@@ -1,3 +1,5 @@
+import * as string_decoder from "string_decoder";
+
 export enum Guard {
   Low,
   Mid,
@@ -32,4 +34,11 @@ export type CardType = {
   guard: Guard;
   reach: Reach;
   weight: Weight;
+};
+
+export type MatchResult = {
+  [key in Side]: {
+    damage: number;
+    image: string;
+  };
 };
