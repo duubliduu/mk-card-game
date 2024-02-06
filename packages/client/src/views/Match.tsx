@@ -7,7 +7,6 @@ import { getClientCoordinates } from "../utils/getClientCoordinates";
 import HitPoints from "../components/HitPoints";
 import { MatchContext } from "../context/MatchContext";
 import useAudio from "../hooks/useAudio";
-import Timer from "../components/Timer";
 
 function Match() {
   const { id, name } = useContext(QueueContext);
