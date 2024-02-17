@@ -1,32 +1,33 @@
 import { v4 as uuidv4 } from "uuid";
-import { CardType, Side } from "../types";
-import { resolveAttack } from "../utils/resolveAttack";
+import { Card, Side } from "../types";
+import { calculateDamage, resolveAttack } from "../utils/resolveAttack";
 import Player from "./Player";
 import logger from "../utils/logger";
 import * as playerHandlers from "../handlers/playerHandlers";
 import { Game } from "./Game";
+import { HitPoints } from "../types";
+import { AttackResult } from "../types/match";
 import { flipSide } from "../utils/general";
-import { HitPoints } from "../types/player";
 
 class Match {
   public id: string = uuidv4();
   public hitPoints: HitPoints = {
-    [Side.Left]: 100,
-    [Side.Right]: 100,
+    [Side.Left]: 1000,
+    [Side.Right]: 1000,
   };
   public players: { [key in Side]: Player | null } = {
     [Side.Left]: null,
     [Side.Right]: null,
   };
   // Cards on the table
-  public table: { [side in Side]: { index: number[]; card: CardType[] } } = {
+  public table: { [side in Side]: { indices: number[]; cards: Card[] } } = {
     [Side.Left]: {
-      index: [],
-      card: [],
+      indices: [],
+      cards: [],
     },
     [Side.Right]: {
-      index: [],
-      card: [],
+      indices: [],
+      cards: [],
     },
   };
 
@@ -40,24 +41,24 @@ class Match {
     this.game = game;
   }
 
-  dealDamage(damage: { [Side.Left]: number; [Side.Right]: number }) {
-    if (damage[Side.Left] > 0) {
-      this.hitPoints[Side.Left] -= damage[Side.Left];
+  dealDamage({ [Side.Left]: leftSide, [Side.Right]: rightSide }: AttackResult) {
+    if (leftSide.damage > 0) {
+      this.hitPoints[Side.Left] -= leftSide.damage;
     }
-    if (damage[Side.Right] > 0) {
-      this.hitPoints[Side.Right] -= damage[Side.Right];
+    if (rightSide.damage > 0) {
+      this.hitPoints[Side.Right] -= rightSide.damage;
     }
   }
 
   clearTable() {
     this.table = {
       [Side.Left]: {
-        index: [],
-        card: [],
+        indices: [],
+        cards: [],
       },
       [Side.Right]: {
-        index: [],
-        card: [],
+        indices: [],
+        cards: [],
       },
     };
   }
@@ -65,45 +66,74 @@ class Match {
   replacePlayedCards() {
     Object.values(this.players).forEach((player) => {
       if (player && player.side) {
-        this.table[player.side].index.forEach((index) => {
+        this.table[player.side].indices.forEach((index) => {
           player.supplementHand(index);
         });
       }
     });
   }
 
-  resolveAttacks() {
+  resolveRound(): AttackResult[] {
     const { [Side.Left]: leftCard, [Side.Right]: rightCard } = this.table;
 
-    const results = [];
+    const results: AttackResult[] = [];
 
     for (let i = 0; i < 3; i++) {
-      const { damage, message } = resolveAttack(
-        leftCard.card[i],
-        rightCard.card[i]
+      const cardOrMessage = resolveAttack(
+        leftCard.cards[i],
+        rightCard.cards[i]
       );
-      results.push({ damage, message });
+
+      const actionResult = {
+        gap: 0,
+        message: "",
+        [Side.Left]: {
+          damage: 0,
+        },
+        [Side.Right]: {
+          damage: 0,
+        },
+      };
+
+      if (typeof cardOrMessage === "string") {
+        actionResult.message = cardOrMessage;
+      } else {
+        const [side, card] = cardOrMessage;
+        const damage = calculateDamage(card);
+
+        actionResult[side] = { damage, ...card };
+        actionResult[flipSide(side)] = {
+          damage: 0,
+          ...(side === Side.Left ? leftCard.cards[i] : rightCard.cards[i]),
+        };
+      }
+      results.push(actionResult);
     }
 
     return results;
   }
 
-  play(side: Side, indices: number[]) {
-    // Set card on the table, your side, face down
-    this.table[side] = {
-      index: indices,
-      card: this.players[side]!.findCardByIndex(indices),
-    };
+  get bothSidesReady() {
+    return (
+      this.table[Side.Left].indices.length > 0 &&
+      this.table[Side.Right].indices.length > 0
+    );
+  }
 
-    if (this.table[flipSide(side)].index.length === 0) {
+  play(side: Side, indices: number[]) {
+    const cards = this.players[side]!.findCardByIndex(indices);
+
+    this.table[side] = { indices, cards };
+
+    if (!this.bothSidesReady) {
       return;
     }
 
-    const results = this.resolveAttacks();
+    const results = this.resolveRound();
 
-    results.forEach(({ damage }) => {
-      this.dealDamage(damage);
-    });
+    for (const result of results) {
+      this.dealDamage(result);
+    }
 
     this.replacePlayedCards();
 
@@ -120,7 +150,7 @@ class Match {
     return Object.entries(this.table).reduce((table, [side, tableItem]) => {
       return {
         ...table,
-        [side]: tableItem.card,
+        [side]: tableItem.cards,
       };
     }, {});
   }

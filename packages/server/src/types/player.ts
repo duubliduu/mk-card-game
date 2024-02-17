@@ -1,4 +1,4 @@
-import { Side } from "./index";
+import { Side } from "./card";
 
 export type Attributes = {
   strength: number;

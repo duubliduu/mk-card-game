@@ -1,9 +1,9 @@
 import React, { FunctionComponent, useEffect, useRef } from "react";
 import useDragging from "../hooks/useDragging";
-import { Weight } from "../types";
+import { CardType, Weight } from "../types";
+import "./Card.scss";
 
 type CardProps = {
-  image: string;
   onDrop?: <T extends Event>(event: T) => void;
   onDrag?: <T extends Event>(event: T) => void;
   onDragStart?: <T extends Event>(event: T) => void;
@@ -11,8 +11,8 @@ type CardProps = {
   flip?: boolean;
   rotation?: number;
   disabled?: boolean;
-  weight: Weight;
-};
+  zIndex?: number;
+} & CardType;
 
 const borderMap = {
   [Weight.Light]: "border",
@@ -30,6 +30,9 @@ const Card: FunctionComponent<CardProps> = ({
   rotation,
   disabled = false,
   weight,
+  zIndex = undefined,
+  reach,
+  guard,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +56,7 @@ const Card: FunctionComponent<CardProps> = ({
   }, [isEnabled, disabled]);
 
   return (
-    <article style={{ width: rotation === undefined ? "23%" : "30px" }}>
+    <article style={{ width: rotation === undefined ? "23%" : "40px", zIndex }}>
       <div
         ref={cardRef}
         className="rounded aspect-portrait bg-white p-2 drop-shadow-md"
@@ -67,7 +70,7 @@ const Card: FunctionComponent<CardProps> = ({
         }}
       >
         <div
-          className={`rounded aspect-portrait p-2 ${borderMap[weight]} border-slate-600 relative`}
+          className={`rounded aspect-portrait p-2 border-2 border-slate-600 relative`}
         >
           <img
             className={`${flip && "transform -scale-x-100"}`}
@@ -76,6 +79,10 @@ const Card: FunctionComponent<CardProps> = ({
             style={{ opacity: disabled ? 0.5 : 1 }}
           />
         </div>
+        <span className="template" />
+        <span
+          className={`indicators reach-${reach} weight-${weight} guard-${guard}`}
+        />
       </div>
     </article>
   );

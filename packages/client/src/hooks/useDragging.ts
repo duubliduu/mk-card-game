@@ -33,7 +33,7 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
       const { left, top } = ref.current.getBoundingClientRect();
 
       ref.current.style.position = "absolute";
-      //ref.current.style.zIndex = "99999";
+      ref.current.style.zIndex = "99999";
 
       isDragging.current = true;
 
@@ -67,6 +67,7 @@ const useDragging = ({ ref, onMouseDown, onMouseMove, onMouseUp }: Props) => {
       isDragging.current = false;
 
       ref.current!.style.position = "static";
+      ref.current!.style.zIndex = "auto";
 
       if (typeof onMouseUp === "function") onMouseUp(event);
     },

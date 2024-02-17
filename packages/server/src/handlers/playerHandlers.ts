@@ -1,10 +1,15 @@
 import Player from "../controllers/Player";
 import logger from "../utils/logger";
-import { Room, Side } from "../types";
+import { Room } from "../types";
 import Match from "../controllers/Match";
+import { AttackResult } from "../types/match";
 
 export const play = (player: Player, cardIndices: number[]) => {
-  logger.info("Player played a card", { cardIndices, playerId: player.id });
+  logger.info("Cards are played", {
+    cardIndices,
+    side: player.side,
+    playerId: player.id,
+  });
 
   if (!player.match || player.side === undefined) {
     player.emit("exit");
@@ -98,14 +103,9 @@ export const disconnect = (player: Player) => {
 export const afterPlay = (
   player: Player,
   match: Match,
-  results: {
-    damage: { [Side.Left]: number; [Side.Right]: number };
-    message: string;
-  }[]
+  results: AttackResult[]
 ) => {
-  player.emit("table", match.table);
   player.emit("hand", player.hand);
   player.emit("results", results);
-  player.emit("play", match.cardsOnTable);
   player.emit("hitPoints", match.hitPoints);
 };

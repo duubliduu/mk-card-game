@@ -4,14 +4,13 @@ import React, {
   PropsWithChildren,
   useState,
 } from "react";
-import { CardType, Side } from "../types";
+import { AttackResult, CardType, Side } from "../types";
 import useSocket from "../hooks/useSocket";
 
 type MatchContextType = {
   selectedCards: number[];
   handleSelectCard: (selectedIndex: number) => void;
   handleDeselectCard: (selectedIndex: number) => void;
-  table: Record<Side, CardType | null>;
   cards: CardType[];
   hitPoints: { [side in Side]: number };
   side: Side;
@@ -26,14 +25,13 @@ type MatchContextType = {
   isReady: boolean;
   handleJoinMatch: (matchId: string) => void;
   cardsInHand: number[];
+  results: AttackResult[];
 };
 
 const defaultValues = {
   isLockedIn: false,
   isPlayed: false,
   selectedCards: [],
-  table: { [Side.Left]: null, [Side.Right]: null },
-  setTable: () => {}, // IDE doesn't understand this method is actually in use. Don't remove
   cards: [],
   hitPoints: { [Side.Left]: 100, [Side.Right]: 100 },
   side: Side.Left,
@@ -46,15 +44,12 @@ const defaultValues = {
   handleDeselectCard: () => {},
   handlePlay: () => {},
   handleJoinMatch: () => {},
+  results: [],
 };
 
 export const MatchContext = createContext<MatchContextType>(defaultValues);
 
 const MatchProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
-  const [table, setTable] = useState<{ [side in Side]: CardType | null }>({
-    [Side.Left]: null,
-    [Side.Right]: null,
-  });
   const [cards, setCards] = useState<CardType[]>([]);
   const [hitPoints, setHitPoints] = useState<{ [side in Side]: number }>({
     [Side.Left]: 100,
@@ -70,40 +65,44 @@ const MatchProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
     Partial<{ id: string; name: string }>
   >({});
   const [selectedCards, setSelectedCards] = useState<number[]>([]);
-  const [cardsInHand, setCardsInHand] = useState<number[]>([]);
+  const [cardsInHand, setCardsInHand] = useState<number[]>([0, 1, 2, 3, 4]);
   const [isPlayed, setIsPlayed] = useState(false);
   const [isLockedIn, setIsLockedIn] = useState(false);
+  const [results, setResults] = useState<AttackResult[]>([]);
+
+  const resetHand = (cards: CardType[]) => {
+    setCardsInHand(
+      Array(cards.length)
+        .fill(0)
+        .map((_, i) => i)
+    );
+  };
 
   const emit = useSocket({
     message: (message: string) => console.log("message", message),
-    hand: (payload: CardType[]) => {
-      console.log("hand", payload);
-      setCards([...payload]);
-      setSelectedCards([]);
-      setCardsInHand(
-        Array(payload.length)
-          .fill(0)
-          .map((_, i) => i)
-      );
+    hand: (cards: CardType[]) => {
+      console.log("hand", cards);
+      setCards(cards);
+      resetHand(cards);
     },
-    table: (payload: any) => {
-      console.log("table", payload);
-      setIsPlayed(false);
-      setTable(payload);
-    },
-    play: (payload: any) => {
-      console.log("play", payload);
+    results: (results: AttackResult[]) => {
+      console.log("results", results);
       setIsPlayed(true);
       setIsLockedIn(false);
       setSelectedCards([]);
-      setTable(payload);
+      setResults(results);
     },
     hitPoints: setHitPoints,
-    pop: setPops,
-    side: setSide,
+    side: (side: Side) => {
+      console.log("side", side);
+      setSide(side);
+    },
     ready: setIsReady,
     leave: () => setIsReady(false),
-    opponent: setOpponent,
+    opponent: (opponent: any) => {
+      console.log("opponent", opponent);
+      setOpponent(opponent);
+    },
     exit: () => {
       //navigate("/");
     },
@@ -154,7 +153,6 @@ const MatchProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
         handleSelectCard,
         handleDeselectCard,
         hitPoints,
-        table,
         cards,
         side,
         pops,
@@ -170,6 +168,7 @@ const MatchProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
         isPlayed,
         handleJoinMatch,
         cardsInHand,
+        results,
       }}
     >
       {children}

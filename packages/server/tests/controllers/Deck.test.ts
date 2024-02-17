@@ -1,5 +1,5 @@
 import Deck from "../../src/controllers/Deck";
-import { CardType } from "../../src/types";
+import { Card } from "../../src/types";
 
 describe("Deck", () => {
   let deck: Deck;
@@ -15,7 +15,7 @@ describe("Deck", () => {
   });
 
   describe("when cards are drawn", () => {
-    let cards: CardType[] = [];
+    let cards: Card[] = [];
 
     beforeEach(() => {
       cards = deck.draw(20);

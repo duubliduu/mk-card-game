@@ -1,4 +1,4 @@
-import { CardType, Reach, Guard, Weight } from "../types";
+import { Card, Reach, Guard, Weight } from "../types";
 
 const reaches: Reach[] = [
   Reach.Guard,
@@ -32,7 +32,7 @@ const weights: { [key in Reach]: Weight[] } = {
 // Build deck with one card of each possible variation
 export const buildDeck = () => {
   // initiate the dec
-  const deck: CardType[] = [];
+  const deck: Card[] = [];
 
   reaches.forEach((reach) => {
     stances[reach].forEach((stance) => {
@@ -102,7 +102,7 @@ export const buildDeck = () => {
 
 const deck = buildDeck();
 
-const generateDeck = (): CardType[] => {
+const generateDeck = (): Card[] => {
   return [...deck.sort(() => Math.random() - 0.5)];
 };
 

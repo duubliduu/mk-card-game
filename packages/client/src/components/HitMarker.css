@@ -1,0 +1,39 @@
+@property --a {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+@property --b {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+
+.hit-marker {
+  z-index: 9999;
+  height: 50px;
+  aspect-ratio: 1/1;
+  background: radial-gradient(
+      transparent var(--b),
+      white var(--b),
+      white var(--a),
+      transparent var(--a),
+      transparent 100%
+    )
+    50% 50%;
+  border-radius: 100%;
+  position: absolute;
+  transition: --a 0.2s, --b 0.5s; /* we add transition to it */
+}
+
+.hit-marker.animate {
+  --a: 100%;
+  --b: 100%;
+}
+.hit-marker.right {
+  left: 50%;
+}
+.hit-marker.left {
+  right: 50%;
+}

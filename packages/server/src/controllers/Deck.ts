@@ -1,9 +1,9 @@
 import generateDeck from "../utils/generateDeck";
-import { CardType } from "../types";
+import { Card } from "../types";
 
 class Deck {
-  cards: CardType[] = [];
-  playedCards: CardType[] = [];
+  cards: Card[] = [];
+  playedCards: Card[] = [];
 
   get length() {
     return this.cards.length;
@@ -18,7 +18,7 @@ class Deck {
     this.cards.sort(() => Math.random() - 0.5);
   }
 
-  draw(numberOfCards: number): CardType[] {
+  draw(numberOfCards: number): Card[] {
     if (this.length === 0) {
       this.reShuffle();
     }

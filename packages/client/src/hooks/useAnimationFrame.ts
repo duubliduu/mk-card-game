@@ -6,8 +6,8 @@ const useAnimationFrame = (callback: Function) => {
 
   const animate = (time: number) => {
     if (previousTimerRef.current !== undefined) {
-      const deltatime = time - previousTimerRef.current;
-      callback(deltatime);
+      const deltaTime = time - previousTimerRef.current;
+      callback(deltaTime);
     }
     previousTimerRef.current = time;
     requestRef.current = requestAnimationFrame(animate);
