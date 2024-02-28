@@ -1,28 +1,24 @@
 import { useEffect, useRef } from "react";
 
-const useAnimationFrame = (callback: Function) => {
-  const requestRef = useRef<number>();
-  const previousTimerRef = useRef<number>();
-
-  const animate = (time: number) => {
-    if (previousTimerRef.current !== undefined) {
-      const deltaTime = time - previousTimerRef.current;
-      callback(deltaTime);
-    }
-    previousTimerRef.current = time;
-    requestRef.current = requestAnimationFrame(animate);
-  };
+const useAnimationFrame = (callback: (frameRate: number) => void) => {
+  const prevTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    requestRef.current = requestAnimationFrame(animate);
+    const animate = (time: number) => {
+      const deltaTime = time - prevTimeRef.current;
+
+      callback(deltaTime);
+
+      prevTimeRef.current = time;
+      requestAnimationFrame(animate);
+    };
+
+    requestAnimationFrame(animate);
 
     return () => {
-      if (requestRef.current !== undefined) {
-        cancelAnimationFrame(requestRef.current);
-      }
+      prevTimeRef.current = 0;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [callback]);
 };
 
 export default useAnimationFrame;

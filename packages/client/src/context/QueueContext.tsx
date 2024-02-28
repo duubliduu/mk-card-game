@@ -7,6 +7,7 @@ import {
 } from "react";
 import useSocket from "../hooks/useSocket";
 import { useDebounce } from "usehooks-ts";
+import imageService from "../services/imageService";
 
 type QueueItem = { id: string; name: string; inMatch: boolean };
 
@@ -35,24 +36,12 @@ const QueueProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
   const [challenges, setChallenges] = useState<QueueContextType["challenges"]>(
     defaultValues.challenges
   );
-  const [progress, setProgress] = useState<[number, number]>([0, 0]);
   const [id, setId] = useState<QueueContextType["id"]>("Demo");
   const [name, setName] = useState<QueueContextType["name"]>();
 
-  const loadImages = (images: string[]) => {
-    setProgress([0, 0]);
-    images.forEach((image) => {
-      const imageElement = new Image();
-      imageElement.src = `/images/cards/${image}`;
-      imageElement.onload = () => {
-        setProgress(([loaded]) => [loaded + 1, images.length]);
-      };
-    });
-  };
-
   const emit = useSocket({
     connected: setId,
-    images: loadImages,
+    images: (payload) => imageService.loadImages(payload),
     queue: setQueue,
     add: (payload: QueueItem) => {
       setQueue((state) => [...state, payload]);
@@ -90,8 +79,6 @@ const QueueProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
     }
   }, [emit, debouncedValue]);
 
-  const [imagesLoaded, allImages] = progress;
-
   return (
     <QueueContext.Provider
       value={{
@@ -100,7 +87,7 @@ const QueueProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
         challenges,
         name,
         setName,
-        progress: allImages > 0 ? (imagesLoaded / allImages) * 100 : 0,
+        progress: 0,
       }}
     >
       {children}

@@ -89,9 +89,11 @@ class Match {
         message: "",
         [Side.Left]: {
           damage: 0,
+          ...leftCard.cards[i],
         },
         [Side.Right]: {
           damage: 0,
+          ...rightCard.cards[i],
         },
       };
 
@@ -99,13 +101,8 @@ class Match {
         actionResult.message = cardOrMessage;
       } else {
         const [side, card] = cardOrMessage;
-        const damage = calculateDamage(card);
-
-        actionResult[side] = { damage, ...card };
-        actionResult[flipSide(side)] = {
-          damage: 0,
-          ...(side === Side.Left ? leftCard.cards[i] : rightCard.cards[i]),
-        };
+        actionResult[side].damage = calculateDamage(card);
+        actionResult[flipSide(side)].damage = 0;
       }
       results.push(actionResult);
     }

@@ -126,7 +126,7 @@ function Match() {
       <div>
         {/* ARENA */}
         {isReady && (
-          <div className="absolute top-15 z-0">
+          <div className="absolute top-15 z-0 w-full">
             <section className="mb-8 mt-8 relative">
               <Arena />
             </section>
