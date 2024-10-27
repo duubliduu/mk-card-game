@@ -1,57 +1,61 @@
 import { calculateDamage, resolveAttack } from "../../src/utils/resolveAttack";
-import { CardType, Guard, Reach, Side, Weight } from "../../src/types";
+import { Card, Guard, Reach, Side, Weight } from "../../src/types";
 
-const punchMidLight: CardType = {
-  image: "",
+const punchMidLight: Card = {
+  image: "punchMidLight.png",
   guard: Guard.Mid,
   reach: Reach.Punch,
   weight: Weight.Light,
 };
-const punchMidMedium: CardType = {
+const punchMidMedium: Card = {
   ...punchMidLight,
+  image: "punchMidMedium.png",
   weight: Weight.Medium,
 };
-const punchMidHeavy: CardType = {
+const punchMidHeavy: Card = {
   ...punchMidLight,
+  image: "punchMidHeavy.png",
   weight: Weight.Heavy,
 };
 
-const kneeMidLight: CardType = {
-  image: "",
+const kneeMidLight: Card = {
+  image: "kneeMidLight.png",
   guard: Guard.Mid,
   reach: Reach.Knee,
   weight: Weight.Light,
 };
 
-const kickMidLight: CardType = {
-  image: "",
+const kickMidLight: Card = {
+  image: "kickMidLight.png",
   guard: Guard.Mid,
   reach: Reach.Kick,
   weight: Weight.Light,
 };
-const kickMidMedium: CardType = {
+const kickMidMedium: Card = {
   ...kickMidLight,
+  image: "kickMidMedium.png",
   weight: Weight.Medium,
 };
-const kickMidHeavy: CardType = {
+const kickMidHeavy: Card = {
   ...kickMidLight,
+  image: "kickMidHeavy.png",
   weight: Weight.Heavy,
 };
 
-const kickHighLight: CardType = {
-  image: "",
+const kickHighLight: Card = {
+  image: "kickHighLight.png",
   guard: Guard.High,
   reach: Reach.Kick,
   weight: Weight.Light,
 };
-const kickLowLight: CardType = {
-  image: "",
+const kickLowLight: Card = {
+  image: "kickLowLight.png",
   guard: Guard.Low,
   reach: Reach.Kick,
   weight: Weight.Light,
 };
-const kickAirLight: CardType = {
-  image: "",
+const kickAirLight: Card = {
+  image: "kickAirLight.png",
   guard: Guard.Air,
   reach: Reach.Kick,
   weight: Weight.Light,
@@ -60,117 +64,94 @@ const kickAirLight: CardType = {
 describe("resolveDamage", () => {
   describe("when guard, reach and weight matches", () => {
     it("should tie", () => {
-      expect(resolveAttack(punchMidLight, punchMidLight)).toEqual({
-        damage: {
-          [Side.Left]: 10,
-          [Side.Right]: 10,
-        },
-        message: "Tie!",
-      });
+      expect(resolveAttack(punchMidLight, punchMidLight)).toEqual("Tie!");
     });
   });
 
   describe("when longer reach", () => {
     it("should have advantage", () => {
-      expect(resolveAttack(punchMidLight, kickMidLight)).toEqual({
-        damage: {
-          [Side.Left]: 20,
-          [Side.Right]: 0,
+      expect(resolveAttack(punchMidLight, kickMidLight)).toEqual([
+        0,
+        {
+          guard: 1,
+          image: "kickMidLight.png",
+          reach: 5,
+          weight: 1,
         },
-        message: "Kick has longer reach!",
-      });
+      ]);
     });
   });
 
   describe("when weight is lighter", () => {
     it("should have advantage", () => {
-      expect(resolveAttack(punchMidLight, punchMidMedium)).toEqual({
-        damage: {
-          [Side.Left]: 15,
-          [Side.Right]: 0,
+      expect(resolveAttack(punchMidLight, punchMidMedium)).toEqual([
+        0,
+        {
+          guard: 1,
+          image: "punchMidMedium.png",
+          reach: 3,
+          weight: 2,
         },
-        message: "",
-      });
+      ]);
     });
   });
 
   describe("when crouching", () => {
     describe("against mid attack", () => {
       it("should have advantage", () => {
-        expect(resolveAttack(kickAirLight, kickMidLight)).toEqual({
-          damage: {
-            [Side.Left]: 0,
-            [Side.Right]: 20,
-          },
-          message: "Air attack!",
-        });
+        expect(resolveAttack(kickAirLight, kickMidLight)).toEqual([
+          0,
+          { guard: 3, image: "kickAirLight.png", reach: 5, weight: 1 },
+        ]);
       });
     });
 
     describe("against high attack", () => {
       it("should be antiaired", () => {
-        expect(resolveAttack(kickAirLight, kickHighLight)).toEqual({
-          damage: {
-            [Side.Left]: 20,
-            [Side.Right]: 0,
-          },
-          message: "Antiair!",
-        });
+        expect(resolveAttack(kickAirLight, kickHighLight)).toEqual([
+          1,
+          { guard: 2, image: "kickHighLight.png", reach: 5, weight: 1 },
+        ]);
       });
     });
 
     describe("against air attack", () => {
       it("should whiff", () => {
-        expect(resolveAttack(kickAirLight, kickLowLight)).toEqual({
-          damage: {
-            [Side.Left]: 0,
-            [Side.Right]: 0,
-          },
-          message: "Whiff!",
-        });
+        expect(resolveAttack(kickAirLight, kickLowLight)).toEqual([
+          1,
+          { guard: 3, image: "kickAirLight.png", reach: 5, weight: 1 },
+        ]);
       });
     });
   });
 
   describe("knee", () => {
     it("should be shorter than kick", () => {
-      expect(resolveAttack(kickMidLight, kneeMidLight)).toEqual({
-        damage: {
-          [Side.Left]: 0,
-          [Side.Right]: 20,
-        },
-        message: "Kick has longer reach!",
-      });
+      expect(resolveAttack(kickMidLight, kneeMidLight)).toEqual([
+        1,
+        { guard: 1, image: "kickMidLight.png", reach: 5, weight: 1 },
+      ]);
     });
   });
 
   describe("Mid attack", () => {
     it("should beat high", () => {
-      expect(resolveAttack(kickMidLight, kickHighLight)).toEqual({
-        damage: {
-          [Side.Left]: 0,
-          [Side.Right]: 20,
-        },
-        message: "Mid has longer reach!",
-      });
+      expect(resolveAttack(kickMidLight, kickHighLight)).toEqual([
+        1,
+        { guard: 1, image: "kickMidLight.png", reach: 5, weight: 1 },
+      ]);
     });
     it("should beat low", () => {
-      expect(resolveAttack(kickMidLight, kickLowLight)).toEqual({
-        damage: {
-          [Side.Left]: 0,
-          [Side.Right]: 20,
-        },
-        message: "Mid has longer reach!",
-      });
+      expect(resolveAttack(kickMidLight, kickLowLight)).toEqual([
+        1,
+        { guard: 1, image: "kickMidLight.png", reach: 5, weight: 1 },
+      ]);
     });
     it("should lose to air", () => {
-      expect(resolveAttack(kickMidLight, kickAirLight)).toEqual({
-        damage: {
-          [Side.Left]: 20,
-          [Side.Right]: 0,
-        },
-        message: "Air attack!",
-      });
+      expect(resolveAttack(kickMidLight, kickAirLight)).toEqual([
+        1,
+        { guard: 3, image: "kickAirLight.png", reach: 5, weight: 1 },
+      ]);
     });
   });
 });

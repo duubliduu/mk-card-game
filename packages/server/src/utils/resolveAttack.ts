@@ -1,4 +1,4 @@
-import { CardType, Guard, Reach, Side, Weight } from "../types";
+import { Card, Guard, Reach, Side, Weight } from "../types";
 
 type DamageReachMap = {
   [key in Exclude<Reach, Reach.None | Reach.Guard | Reach.Grapple>]: number;
@@ -11,7 +11,7 @@ const damageReachMap: DamageReachMap = {
   [Reach.FireBall]: 10,
 };
 
-export const calculateDamage = (attacker: CardType): number => {
+export const calculateDamage = (attacker: Card): number => {
   if (attacker.reach in damageReachMap) {
     // @ts-ignore
     const baseDamage = damageReachMap[attacker.reach];
@@ -20,36 +20,33 @@ export const calculateDamage = (attacker: CardType): number => {
   return 0;
 };
 
-const isDefending = (card: CardType) => {
+const isDefending = (card: Card) => {
   return card.reach === Reach.Guard;
 };
 
-const isAttacking = (card: CardType): boolean => {
+const isAttacking = (card: Card): boolean => {
   return card.reach > Reach.Guard;
 };
 
-const isParry = (leftCArd: CardType, rightCard: CardType) => {
+const isParry = (leftCArd: Card, rightCard: Card) => {
   return (
     leftCArd.reach === rightCard.reach && leftCArd.guard === rightCard.guard
   );
 };
 
-const isJumping = (card: CardType) => {
+const isJumping = (card: Card) => {
   return card.guard === Guard.Air;
 };
 
-const isCrouching = (card: CardType) => {
+const isCrouching = (card: Card) => {
   return card.guard === Guard.Low;
 };
 
-const isHigh = (card: CardType) => {
+const isHigh = (card: Card) => {
   return card.guard === Guard.High;
 };
 
-const doesWhiff = (
-  attackingCard: CardType,
-  defendingCard: CardType
-): boolean => {
+const doesWhiff = (attackingCard: Card, defendingCard: Card): boolean => {
   return (
     (isJumping(attackingCard) && isCrouching(defendingCard)) ||
     (isHigh(attackingCard) && isCrouching(defendingCard)) ||
@@ -57,72 +54,65 @@ const doesWhiff = (
   );
 };
 
-const isLight = (card: CardType) => {
+const isLight = (card: Card) => {
   return card.weight === Weight.Light;
 };
 
-const isHeavy = (card: CardType) => {
+const isHeavy = (card: Card) => {
   return card.weight === Weight.Heavy;
 };
 
-const isStanding = (card: CardType) => {
+const isStanding = (card: Card) => {
   return card.guard === Guard.Mid || card.guard === Guard.High;
 };
 
-const isOneMid = (
-  leftCard: CardType,
-  rightCard: CardType
-): [Side, CardType] | undefined => {
+const isOneMid = (leftCard: Card, rightCard: Card): [Side, Card] | null => {
   if (leftCard.guard === Guard.Mid && rightCard.guard !== Guard.Mid) {
     return [Side.Right, leftCard];
   }
   if (rightCard.guard === Guard.Mid && leftCard.guard !== Guard.Mid) {
     return [Side.Left, rightCard];
   }
+
+  return null;
 };
 
-const inReach = (attackingCard: CardType, defendingCard: CardType) => {
+const inReach = (attackingCard: Card, defendingCard: Card) => {
   return attackingCard.reach >= defendingCard.reach;
-};
-
-type Result = { damage: { [key in Side]: number }; message: string };
-const defaults: Result = {
-  damage: {
-    [Side.Left]: 0,
-    [Side.Right]: 0,
-  },
-  message: "",
 };
 
 // -1 they get the turn OR they get to go again
 // 0 turn ends
-function isBlocked(leftCard: CardType, rightCard: CardType) {
+function isBlocked(leftCard: Card, rightCard: Card) {
   return leftCard.guard === rightCard.guard;
 }
 
-const whichHasAdvantage = (leftCard: CardType, rightCard: CardType) => {
+const whichHasLongerReach = (
+  leftCard: Card,
+  rightCard: Card
+): [Side, Card] | null => {
   if (leftCard.reach > rightCard.reach) {
-    return leftCard;
+    return [Side.Right, leftCard];
   } else if (rightCard.reach > leftCard.reach) {
-    return rightCard;
+    return [Side.Left, rightCard];
   }
 
   return null;
 };
 
-const whichIsFaster = (leftCard: CardType, rightCard: CardType) => {
+const whichIsFaster = (
+  leftCard: Card,
+  rightCard: Card
+): [Side, Card] | null => {
   if (leftCard.weight > rightCard.weight) {
-    return leftCard;
+    return [Side.Right, leftCard];
   } else if (rightCard.weight > leftCard.weight) {
-    return rightCard;
+    return [Side.Left, rightCard];
   }
   return null;
 };
 
-const isAirAttack = (
-  leftCard: CardType,
-  rightCard: CardType
-): [Side, CardType] | false => {
+const isAirAttack = (leftCard: Card, rightCard: Card): [Side, Card] | null => {
   if (
     [leftCard.guard, rightCard.guard].includes(Guard.Air) &&
     [leftCard.guard, rightCard.guard].includes(Guard.Mid)
@@ -132,13 +122,10 @@ const isAirAttack = (
       : [Side.Right, rightCard];
   }
 
-  return false;
+  return null;
 };
 
-const isAntiAir = (
-  leftCard: CardType,
-  rightCard: CardType
-): [Side, CardType] | false => {
+const isAntiAir = (leftCard: Card, rightCard: Card): [Side, Card] | false => {
   if (
     [leftCard.guard, rightCard.guard].includes(Guard.Air) &&
     [leftCard.guard, rightCard.guard].includes(Guard.High)
@@ -151,145 +138,98 @@ const isAntiAir = (
   return false;
 };
 
+const whichOneWhiffs = (
+  leftCard: Card,
+  rightCard: Card
+): [Side, Card] | null => {
+  if (doesWhiff(leftCard, rightCard)) {
+    return [Side.Right, leftCard];
+  }
+  if (doesWhiff(rightCard, leftCard)) {
+    return [Side.Right, leftCard];
+  }
+
+  return null;
+};
+
 // +1 you get the turn OR you get to go again
 /**
  * returns [damage, endTurn, message]
  */
 export const resolveAttack = (
-  leftCard: CardType,
-  rightCard: CardType
-): Result => {
+  leftCard: Card,
+  rightCard: Card
+): [Side, Card] | string => {
   // Both attacking
   if (isAttacking(leftCard) && isAttacking(rightCard)) {
-    const advantagedOne = whichHasAdvantage(leftCard, rightCard);
+    const longerReachResult = whichHasLongerReach(leftCard, rightCard);
 
-    if (advantagedOne) {
-      return <Result>{
-        damage: {
-          [advantagedOne === leftCard ? Side.Right : Side.Left]:
-            calculateDamage(advantagedOne),
-          [advantagedOne !== rightCard ? Side.Left : Side.Right]: 0,
-        },
-        message: `${Reach[advantagedOne.reach]} has longer reach!`,
-      };
+    if (longerReachResult) {
+      return longerReachResult;
     }
 
-    const oneWhiffs =
-      doesWhiff(leftCard, rightCard) || doesWhiff(rightCard, leftCard);
+    const oneWhiffs = whichOneWhiffs(leftCard, rightCard);
 
     if (oneWhiffs) {
-      return <Result>{
-        damage: {
-          [Side.Left]: 0,
-          [Side.Right]: 0,
-        },
-        message: "Whiff!",
-      };
+      return oneWhiffs;
     }
+
     const fasterOne = whichIsFaster(leftCard, rightCard);
 
     if (fasterOne) {
-      return <Result>{
-        damage: {
-          [fasterOne === leftCard ? Side.Right : Side.Left]:
-            calculateDamage(fasterOne),
-          [fasterOne !== rightCard ? Side.Left : Side.Right]: 0,
-        },
-        message: "",
-      };
+      return fasterOne;
     }
 
     const oneIsAirAttack = isAirAttack(leftCard, rightCard);
 
+    // Is overhead
     if (oneIsAirAttack) {
-      return <Result>{
-        damage: {
-          [oneIsAirAttack[0]]: 0,
-          [Number(!oneIsAirAttack[0]) as Side]: calculateDamage(
-            oneIsAirAttack[1]
-          ),
-        },
-        message: "Air attack!",
-      };
+      return oneIsAirAttack;
     }
 
-    const onIsAntiAir = isAntiAir(leftCard, rightCard);
+    const oneIsAntiAir = isAntiAir(leftCard, rightCard);
 
-    if (onIsAntiAir) {
-      return <Result>{
-        damage: {
-          [onIsAntiAir[0]]: 0,
-          [Number(!onIsAntiAir[0]) as Side]: calculateDamage(onIsAntiAir[1]),
-        },
-        message: "Antiair!",
-      };
+    if (oneIsAntiAir) {
+      return oneIsAntiAir;
     }
 
-    const [MidSide, MidCard] = isOneMid(leftCard, rightCard) ?? [];
+    const oneIsMid = isOneMid(leftCard, rightCard);
 
-    if (MidCard && MidSide !== undefined) {
-      return <Result>{
-        damage: {
-          [MidSide]: calculateDamage(MidCard),
-          [Number(!MidSide)]: 0,
-        },
-        message: "Mid has longer reach!",
-      };
+    if (oneIsMid) {
+      return oneIsMid;
     }
 
-    return <Result>{
-      damage: {
-        [Side.Left]: calculateDamage(rightCard),
-        [Side.Right]: calculateDamage(leftCard),
-      },
-      message: "Tie!",
-    };
+    return "Tie!";
   }
 
   // left is attacking, right is defending
   if (isAttacking(leftCard) && isDefending(rightCard)) {
     if (doesWhiff(leftCard, rightCard)) {
-      return { ...defaults, message: "Whiff!" };
+      return "Whiff!";
     }
     if (!inReach(leftCard, rightCard)) {
-      return { ...defaults, message: "Short!" };
+      return "Short!";
     }
     if (!isBlocked(leftCard, rightCard)) {
-      return { ...defaults, message: "Blocked!" };
+      return "Blocked!";
     }
-    return {
-      damage: {
-        [Side.Left]: 0,
-        [Side.Right]: calculateDamage(leftCard),
-      },
-      message: "",
-    };
+    return [Side.Left, leftCard];
   }
 
   // left is defending, right is attacking
   if (isDefending(leftCard) && isAttacking(rightCard)) {
     if (doesWhiff(rightCard, leftCard)) {
-      return { ...defaults, message: "Whiff!" };
+      return "Whiff!";
     }
     if (!inReach(rightCard, leftCard)) {
-      return { ...defaults, message: "Short!" };
+      return "Short!";
     }
     if (!isBlocked(rightCard, leftCard)) {
-      return { ...defaults, message: "Blocked!" };
+      return "Blocked!";
     }
-    return {
-      damage: {
-        [Side.Left]: calculateDamage(rightCard),
-        [Side.Right]: 0,
-      },
-      message: "",
-    };
+    return [Side.Right, rightCard];
   }
 
   // Both defending
-  // Recover stamina
-  return {
-    ...defaults,
-    message: "Impass!",
-  };
+  return "Impass!";
 };

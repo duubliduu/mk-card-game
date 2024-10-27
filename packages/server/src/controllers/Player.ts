@@ -1,5 +1,5 @@
 import { Socket } from "socket.io";
-import { CardType, Room, Side } from "../types";
+import { Card, Room, Side } from "../types";
 import Match from "./Match";
 import logger from "../utils/logger";
 import * as handlers from "../handlers/playerHandlers";
@@ -16,7 +16,7 @@ class Player extends SocketController {
   attributes: Attributes = generateAttributes();
   // TODO: Fetch cards from database
   deck: Deck = new Deck();
-  hand: CardType[] = [];
+  hand: Card[] = [];
   side?: Side;
   name?: string;
 
@@ -88,9 +88,10 @@ class Player extends SocketController {
     return JSON.stringify(rest);
   }
 
-  findCardByIndex(cardIndex: number): CardType {
-    const { ...cardToPlay } = this.hand[cardIndex] as CardType;
-    return cardToPlay;
+  findCardByIndex(cardIndices: number[]): Card[] {
+    return cardIndices.map((cardIndex) => {
+      return this.hand[cardIndex];
+    });
   }
 
   supplementHand = (cardIndex: number) => {

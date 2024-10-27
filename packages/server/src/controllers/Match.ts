@@ -1,32 +1,33 @@
 import { v4 as uuidv4 } from "uuid";
-import { CardType, Side } from "../types";
-import { resolveAttack } from "../utils/resolveAttack";
+import { Card, Side } from "../types";
+import { calculateDamage, resolveAttack } from "../utils/resolveAttack";
 import Player from "./Player";
 import logger from "../utils/logger";
 import * as playerHandlers from "../handlers/playerHandlers";
 import { Game } from "./Game";
+import { HitPoints } from "../types";
+import { AttackResult } from "../types/match";
 import { flipSide } from "../utils/general";
-import { HitPoints } from "../types/player";
 
 class Match {
   public id: string = uuidv4();
   public hitPoints: HitPoints = {
-    [Side.Left]: 100,
-    [Side.Right]: 100,
+    [Side.Left]: 1000,
+    [Side.Right]: 1000,
   };
   public players: { [key in Side]: Player | null } = {
     [Side.Left]: null,
     [Side.Right]: null,
   };
   // Cards on the table
-  public table: { [side in Side]: { index: number; card: CardType | null } } = {
+  public table: { [side in Side]: { indices: number[]; cards: Card[] } } = {
     [Side.Left]: {
-      index: -1,
-      card: null,
+      indices: [],
+      cards: [],
     },
     [Side.Right]: {
-      index: -1,
-      card: null,
+      indices: [],
+      cards: [],
     },
   };
 
@@ -40,69 +41,113 @@ class Match {
     this.game = game;
   }
 
-  dealDamage(damage: { [Side.Left]: number; [Side.Right]: number }) {
-    if (damage[Side.Left] > 0) {
-      this.hitPoints[Side.Left] -= damage[Side.Left];
+  dealDamage({ [Side.Left]: leftSide, [Side.Right]: rightSide }: AttackResult) {
+    if (leftSide.damage > 0) {
+      this.hitPoints[Side.Left] -= leftSide.damage;
     }
-    if (damage[Side.Right] > 0) {
-      this.hitPoints[Side.Right] -= damage[Side.Right];
+    if (rightSide.damage > 0) {
+      this.hitPoints[Side.Right] -= rightSide.damage;
     }
   }
 
   clearTable() {
     this.table = {
       [Side.Left]: {
-        index: -1,
-        card: null,
+        indices: [],
+        cards: [],
       },
       [Side.Right]: {
-        index: -1,
-        card: null,
+        indices: [],
+        cards: [],
       },
     };
   }
 
-  dealCards() {
+  replacePlayedCards() {
     Object.values(this.players).forEach((player) => {
-      if (player) {
-        player.supplementHand(this.table[player.side!].index);
+      if (player && player.side) {
+        this.table[player.side].indices.forEach((index) => {
+          player.supplementHand(index);
+        });
       }
     });
   }
 
-  play(side: Side, card: { index: number; card: CardType }) {
-    // Set card on the table, your side, face down
-    this.table[side] = card;
+  resolveRound(): AttackResult[] {
+    const { [Side.Left]: leftCard, [Side.Right]: rightCard } = this.table;
 
-    if (this.table[flipSide(side)].index === -1) {
+    const results: AttackResult[] = [];
+
+    for (let i = 0; i < 3; i++) {
+      const cardOrMessage = resolveAttack(
+        leftCard.cards[i],
+        rightCard.cards[i]
+      );
+
+      const actionResult = {
+        gap: 0,
+        message: "",
+        [Side.Left]: {
+          damage: 0,
+          ...leftCard.cards[i],
+        },
+        [Side.Right]: {
+          damage: 0,
+          ...rightCard.cards[i],
+        },
+      };
+
+      if (typeof cardOrMessage === "string") {
+        actionResult.message = cardOrMessage;
+      } else {
+        const [side, card] = cardOrMessage;
+        actionResult[side].damage = calculateDamage(card);
+        actionResult[flipSide(side)].damage = 0;
+      }
+      results.push(actionResult);
+    }
+
+    return results;
+  }
+
+  get bothSidesReady() {
+    return (
+      this.table[Side.Left].indices.length > 0 &&
+      this.table[Side.Right].indices.length > 0
+    );
+  }
+
+  play(side: Side, indices: number[]) {
+    const cards = this.players[side]!.findCardByIndex(indices);
+
+    this.table[side] = { indices, cards };
+
+    if (!this.bothSidesReady) {
       return;
     }
 
-    const { [Side.Left]: leftCard, [Side.Right]: rightCard } = this.table;
+    const results = this.resolveRound();
 
-    const { damage, message } = resolveAttack(
-      leftCard!.card!,
-      rightCard!.card!
-    );
+    for (const result of results) {
+      this.dealDamage(result);
+    }
 
-    this.dealDamage(damage);
+    this.replacePlayedCards();
 
-    this.dealCards();
+    this.trigger("afterPlay", this, results);
 
-    this.trigger("afterPlay", this, damage, message);
+    this.clearTable();
 
     if (this.isGameOver) {
       this.gameOver();
     }
-
-    this.clearTable();
   }
 
   get cardsOnTable() {
     return Object.entries(this.table).reduce((table, [side, tableItem]) => {
       return {
         ...table,
-        [side]: tableItem.card,
+        [side]: tableItem.cards,
       };
     }, {});
   }

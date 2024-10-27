@@ -7,6 +7,7 @@ export enum Guard {
 
 export enum Reach {
   None,
+  Guard,
   Grapple,
   Punch,
   Knee,
@@ -25,21 +26,22 @@ export enum Side {
   Right,
 }
 
-export type CardType = {
+export type FrameData = {
+  startUp: number;
+  blockAdvance: number;
+  hitAdvance: number;
+  active: number;
+  recovery: number;
+  stun: number;
+};
+
+export type Card = {
   image: string;
-  move?: number;
   guard: Guard;
   reach: Reach;
   weight: Weight;
 };
 
-export type AttackResult = {
-  gap: number;
-  message: string;
-  [Side.Left]: {
-    damage: number;
-  } & CardType;
-  [Side.Right]: {
-    damage: number;
-  } & CardType;
-};
+export enum Room {
+  QUEUE = "queue",
+}

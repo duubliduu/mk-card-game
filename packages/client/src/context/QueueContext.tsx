@@ -7,57 +7,41 @@ import {
 } from "react";
 import useSocket from "../hooks/useSocket";
 import { useDebounce } from "usehooks-ts";
+import imageService from "../services/imageService";
 
 type QueueItem = { id: string; name: string; inMatch: boolean };
 
 type QueueContextType = {
   queue: QueueItem[];
-  challenges: { [matchId: string]: string };
-  id?: string;
-  name?: string;
+  challenges: Record<string, string>;
   setName: (name: string) => void;
   progress: number;
+  id?: string;
+  name?: string;
 };
 
 const defaultValues = {
   queue: [],
   challenges: {},
-  name: undefined,
   progress: 0,
   setName: () => {}, // IDE doesn't understand this method is actually in use. Don't remove
 };
 
 export const QueueContext = createContext<QueueContextType>(defaultValues);
 
-const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
-  children,
-}) => {
-  const [id, setId] = useState<QueueContextType["id"]>();
+const QueueProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
   const [queue, setQueue] = useState<QueueContextType["queue"]>(
     defaultValues.queue
   );
   const [challenges, setChallenges] = useState<QueueContextType["challenges"]>(
     defaultValues.challenges
   );
-  const [name, setName] = useState<QueueContextType["name"]>(
-    defaultValues.name
-  );
-  const [progress, setProgress] = useState<[number, number]>([0, 0]);
-
-  const loadImages = (images: string[]) => {
-    setProgress([0, 0]);
-    images.forEach((image) => {
-      const imageElement = new Image();
-      imageElement.src = `/images/cards/${image}`;
-      imageElement.onload = () => {
-        setProgress(([loaded]) => [loaded + 1, images.length]);
-      };
-    });
-  };
+  const [id, setId] = useState<QueueContextType["id"]>("Demo");
+  const [name, setName] = useState<QueueContextType["name"]>();
 
   const emit = useSocket({
     connected: setId,
-    images: loadImages,
+    images: (payload) => imageService.loadImages(payload),
     queue: setQueue,
     add: (payload: QueueItem) => {
       setQueue((state) => [...state, payload]);
@@ -95,8 +79,6 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
     }
   }, [emit, debouncedValue]);
 
-  const [imagesLoaded, allImages] = progress;
-
   return (
     <QueueContext.Provider
       value={{
@@ -105,7 +87,7 @@ const QueueProvider: FunctionComponent<PropsWithChildren<{}>> = ({
         challenges,
         name,
         setName,
-        progress: allImages > 0 ? (imagesLoaded / allImages) * 100 : 0,
+        progress: 0,
       }}
     >
       {children}

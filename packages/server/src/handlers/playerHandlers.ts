@@ -1,30 +1,22 @@
 import Player from "../controllers/Player";
 import logger from "../utils/logger";
-import { CardType, Room } from "../types";
-import { HitPoints } from "../types/player";
+import { Room } from "../types";
 import Match from "../controllers/Match";
+import { AttackResult } from "../types/match";
 
-export const play = (player: Player, cardIndex: number) => {
-  logger.info("Player played a card", { cardIndex, playerId: player.id });
+export const play = (player: Player, cardIndices: number[]) => {
+  logger.info("Cards are played", {
+    cardIndices,
+    side: player.side,
+    playerId: player.id,
+  });
 
-  if (!player.match) {
+  if (!player.match || player.side === undefined) {
     player.emit("exit");
     return;
   }
 
-  const cardToPlay = player.findCardByIndex(cardIndex);
-
-  const tableUpdate = {
-    [player.side!]: cardToPlay,
-    [player.opposingSide]: null,
-  };
-
-  player.emit("table", tableUpdate);
-
-  player.match.play(player.side!, {
-    index: cardIndex,
-    card: player.findCardByIndex(cardIndex),
-  });
+  player.match.play(player.side, cardIndices);
 };
 
 export function leaveMatch(player: Player) {
@@ -54,7 +46,7 @@ export function joinMatch(player: Player, matchId: string) {
 
   player.side = match.join(player);
   player.match = match;
-  player.hand = player.deck.draw(3) as [CardType, CardType, CardType];
+  player.hand = player.deck.draw(5);
 
   player.leaveRoom(Room.QUEUE);
   player.joinRoom(matchId);
@@ -111,11 +103,9 @@ export const disconnect = (player: Player) => {
 export const afterPlay = (
   player: Player,
   match: Match,
-  damage: HitPoints,
-  message: string
+  results: AttackResult[]
 ) => {
   player.emit("hand", player.hand);
-  player.emit("pop", { damage, message });
-  player.emit("play", match.cardsOnTable);
+  player.emit("results", results);
   player.emit("hitPoints", match.hitPoints);
 };

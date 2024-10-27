@@ -7,6 +7,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Queue from "./views/Queue";
 import QueueProvider from "./context/QueueContext";
 import ModalProvider from "./context/ModalContext";
+import MatchProvider from "./context/MatchContext";
 
 const router = createBrowserRouter([
   {
@@ -16,7 +17,7 @@ const router = createBrowserRouter([
   {
     path: "/match/:id?",
     element: <Match />,
-  }
+  },
 ]);
 
 const root = ReactDOM.createRoot(
@@ -25,9 +26,11 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <QueueProvider>
-    <ModalProvider>
-      <RouterProvider router={router} />
-    </ModalProvider>
+    <MatchProvider>
+      <ModalProvider>
+        <RouterProvider router={router} />
+      </ModalProvider>
+    </MatchProvider>
   </QueueProvider>
 );
 

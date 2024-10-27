@@ -1,0 +1,86 @@
+%base {
+  display: block;
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 100%;
+}
+
+.template {
+  @extend %base;
+  top: 16px;
+  left: 6px;
+  box-shadow: 0 0 0 0 white, 0 0 0 1px black, 0 14px 0 0 white,
+    0 14px 0 1px black, 0 28px 0 0 white, 0 28px 0 1px black, 0 42px 0 0 white,
+    0 42px 0 1px black;
+}
+
+.indicators {
+  @extend %base;
+  background: white;
+  left: 6px;
+  top: 16px;
+}
+
+.reach {
+  &-0,
+  &-1,
+  &-2 {
+    &.weight-1 {
+      background: black;
+    }
+    &.weight-2 {
+      box-shadow: 0 14px 0 0 black;
+    }
+    &.weight-3 {
+      background: black;
+      box-shadow: 0 14px 0 0 black;
+    }
+  }
+  &-3,
+  &-4,
+  &-5 {
+    &.weight-1 {
+      box-shadow: 0 28px 0 0 black;
+    }
+    &.weight-2 {
+      box-shadow: 0 42px 0 0 black;
+    }
+    &.weight-3 {
+      box-shadow: 0 28px 0 0 black, 0 42px 0 0 black;
+    }
+  }
+}
+
+%baseGuard {
+  @extend %base;
+  content: "";
+  border: solid 2px black;
+  top: 0;
+  height: 14px;
+  width: 14px;
+  margin: -4px 0 0 -4px;
+}
+
+.guard {
+  background: transparent;
+  &-3::after {
+    @extend %baseGuard;
+    top: 0;
+  }
+
+  &-2::after {
+    @extend %baseGuard;
+    top: 14px;
+  }
+
+  &-1::after {
+    @extend %baseGuard;
+    top: 28px;
+  }
+
+  &-0::after {
+    @extend %baseGuard;
+    top: 42px;
+  }
+}
