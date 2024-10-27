@@ -1,4 +1,4 @@
-import React, { FunctionComponent, useContext, useEffect, useRef } from "react";
+import React, { FunctionComponent, useContext, useRef } from "react";
 import { MatchContext } from "../context/MatchContext";
 import useAnimationFrame from "../hooks/useAnimationFrame";
 import useCanvas from "../hooks/useCanvas";
@@ -21,11 +21,7 @@ const Arena: FunctionComponent = () => {
 
     if (!results[frame - 1]) return;
 
-    const {
-      gap = 20,
-      [side]: left,
-      [opponent.side!]: right,
-    } = results[frame - 1];
+    const { [side]: left, [opponent.side!]: right } = results[frame - 1];
 
     ctx.clearRect(0, 0, width, height);
     imageService.findImage(left.image).then((image) => {

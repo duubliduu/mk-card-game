@@ -56,7 +56,7 @@ const MatchProvider: FunctionComponent<PropsWithChildren> = ({ children }) => {
     [Side.Right]: 100,
   });
   const [side, setSide] = useState<Side>(Side.Left);
-  const [pops, setPops] = useState<{
+  const [pops] = useState<{
     damage: { [Side.Left]: number; [Side.Right]: number };
     message: string;
   }>();

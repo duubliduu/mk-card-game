@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 const useAnimationFrame = (update: (frame: number) => void, cycle = -1) => {
   useEffect(() => {
@@ -30,6 +30,7 @@ const useAnimationFrame = (update: (frame: number) => void, cycle = -1) => {
     return () => {
       cancelAnimationFrame(animationFrame);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [update]);
 };
 

@@ -5,6 +5,7 @@
     "test": "tests"
   },
   "dependencies": {
+    "@combat-cards/client": "^0.1.0",
     "redis": "^4.6.7",
     "socket.io": "^4.6.2",
     "socket.io-client": "^4.7.0",

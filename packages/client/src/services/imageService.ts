@@ -4,14 +4,9 @@ import { ImTool } from "imtool/lib/ImTool";
 class ImageService {
   images: Record<string, ImTool> = {};
   loaded: number = 0;
-
-  get progress() {
-    return Math.round((this.loaded / Object.keys(this.images).length) * 100);
-  }
-
   async loadImages(images: string[] = []) {
     for (const image of images) {
-      fromImage(`/images/cards/${image}`).then((imTool) => {
+      fromImage(`/images/cards/${image}`).then((imTool: ImTool) => {
         this.images[image] = imTool;
         this.loaded++;
       });
@@ -28,4 +23,6 @@ class ImageService {
   }
 }
 
-export default new ImageService();
+const imageService = new ImageService();
+
+export default imageService;

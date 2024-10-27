@@ -5,7 +5,6 @@ import { QueueContext } from "../context/QueueContext";
 import { getClientCoordinates } from "../utils/getClientCoordinates";
 import HitPoints from "../components/HitPoints";
 import { MatchContext } from "../context/MatchContext";
-import useAudio from "../hooks/useAudio";
 import "../components/HitMarker.css";
 import Arena from "../components/Arena";
 
@@ -22,7 +21,6 @@ function Match() {
     opponent,
     cards,
     isLockedIn,
-    isPlayed,
     isReady,
     handleJoinMatch,
     cardsInHand,
@@ -30,16 +28,10 @@ function Match() {
   } = useContext(MatchContext);
   const dropAreaRef = useRef<HTMLDivElement>(null);
   // @ts-ignore
-  const intervalRef = useRef<Timer>();
 
   const navigate = useNavigate();
 
-  const [result, setResult] = useState<number>(-1);
   const [isDragging, setIsDragging] = useState(false);
-
-  const [playHeavyHitSound] = useAudio("/audio/hit-2.wav");
-  const [playWhiffSound] = useAudio("/audio/whiff.mp3");
-  const [playBlockSound] = useAudio("/audio/block.mp3");
 
   const isOverDropArea = (x: number, y: number) => {
     if (!dropAreaRef.current) return false;

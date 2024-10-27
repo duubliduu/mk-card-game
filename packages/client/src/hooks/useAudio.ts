@@ -18,6 +18,7 @@ const useAudio = (sound: string): [() => void, boolean] => {
     return () => {
       audio.removeEventListener("ended", handleEnded);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [play, isPlaying];

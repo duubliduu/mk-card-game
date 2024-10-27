@@ -1,6 +1,6 @@
 import React, { FunctionComponent, useEffect, useRef } from "react";
 import useDragging from "../hooks/useDragging";
-import { CardType, Weight } from "../types";
+import { CardType } from "../types";
 import "./Card.scss";
 
 type CardProps = {
@@ -13,12 +13,6 @@ type CardProps = {
   disabled?: boolean;
   zIndex?: number;
 } & CardType;
-
-const borderMap = {
-  [Weight.Light]: "border",
-  [Weight.Medium]: "border-4",
-  [Weight.Heavy]: "border-8",
-};
 
 const Card: FunctionComponent<CardProps> = ({
   image,
