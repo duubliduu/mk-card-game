@@ -1,10 +1,4 @@
-import React, {
-  FunctionComponent,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { FunctionComponent, useContext, useEffect, useRef } from "react";
 import { MatchContext } from "../context/MatchContext";
 import useAnimationFrame from "../hooks/useAnimationFrame";
 import useCanvas from "../hooks/useCanvas";
@@ -12,54 +6,47 @@ import imageService from "../services/imageService";
 
 const Arena: FunctionComponent = () => {
   const { results, side, opponent } = useContext(MatchContext);
-  const timeRef = useRef<number>(0);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const ctxRef = useCanvas(canvasRef);
 
-  useEffect(() => {
-    timeRef.current = 0;
-  }, [JSON.stringify(results)]);
-
-  const animate = (deltaTime: number) => {
-    if (!ctxRef.current) return;
+  const update = async (frame: number) => {
+    if (!ctxRef.current || results.length === 0) return;
 
     const canvas = ctxRef.current.canvas;
     const width = canvas.width;
     const height = canvas.height;
     const ctx = ctxRef.current;
 
-    timeRef.current += deltaTime;
+    if (!results[frame - 1]) return;
 
-    if (timeRef.current >= 3000) {
-      timeRef.current = 0;
-    }
-
-    const frame = Math.floor(timeRef.current / 1000);
-
-    if (frame > results.length - 1) return;
-
-    const { gap = 20, [side]: left, [opponent.side!]: right } = results[frame];
+    const {
+      gap = 20,
+      [side]: left,
+      [opponent.side!]: right,
+    } = results[frame - 1];
 
     ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(
-      imageService.findImage(left.image),
-      width / 2 - width / 3,
-      0,
-      height * (25 / 35),
-      height
-    );
-    ctx.drawImage(
-      imageService.findImage(right.image),
-      width / 2,
-      0,
-      height * (25 / 35),
-      height
-    );
+    imageService.findImage(left.image).then((image) => {
+      ctx.drawImage(
+        image,
+        width / 2 - width / 3,
+        0,
+        height * (25 / 35),
+        height
+      );
+    });
+
+    imageService
+      .findImage(right.image, (tool) => tool.flipH())
+      .then((image) => {
+        ctx.drawImage(image, width / 2, 0, height * (25 / 35), height);
+      });
   };
 
-  useAnimationFrame(animate);
+  useAnimationFrame(update);
+  // useAnimationFrame(update, results.length);
 
   if (opponent.side === undefined || side === undefined) return null;
 

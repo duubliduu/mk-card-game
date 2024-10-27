@@ -1,24 +1,36 @@
 import { useEffect, useRef } from "react";
 
-const useAnimationFrame = (callback: (frameRate: number) => void) => {
-  const prevTimeRef = useRef<number>(0);
-
+const useAnimationFrame = (update: (frame: number) => void, cycle = -1) => {
   useEffect(() => {
+    let prevTime = 0;
+    let deltaTime = 0;
+    let timer = 0;
+    let animationFrame = 0;
+    let frame = 1;
+
     const animate = (time: number) => {
-      const deltaTime = time - prevTimeRef.current;
+      deltaTime = time - prevTime;
+      timer += deltaTime;
 
-      callback(deltaTime);
+      if (timer >= 1000) {
+        update(frame);
+        timer = 0;
+        frame++;
+        if (frame > cycle && cycle !== -1) {
+          frame = 1;
+        }
+      }
 
-      prevTimeRef.current = time;
-      requestAnimationFrame(animate);
+      animationFrame = requestAnimationFrame(animate);
+      prevTime = time;
     };
 
-    requestAnimationFrame(animate);
+    animationFrame = requestAnimationFrame(animate);
 
     return () => {
-      prevTimeRef.current = 0;
+      cancelAnimationFrame(animationFrame);
     };
-  }, [callback]);
+  }, [update]);
 };
 
 export default useAnimationFrame;
